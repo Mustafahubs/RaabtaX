@@ -1,6 +1,8 @@
 import flet as ft
 
 from views.chat_hub_view import chat_hub_view
+from views.dm_chat_view  import dm_chat_view
+from views.dms_view      import dms_view
 from views.login_view    import login_view
 from views.register_view import register_view
 from views.verify_view   import verify_view
@@ -41,6 +43,10 @@ class AppRouter:
                 return await verify_view(self._page)
             case "/hub":
                 return await chat_hub_view(self._page)
+            case "/dms":
+                return await dms_view(self._page)
+            case "/dm":
+                return await dm_chat_view(self._page)
             case _:
                 # Fallback: send unknown routes to login
                 return await login_view(self._page)

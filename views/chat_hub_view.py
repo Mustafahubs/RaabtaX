@@ -529,6 +529,10 @@ class ChatHubView:
             ],
             width=32, height=32,
         )
+        async def _tap(e: ft.ControlEvent) -> None:
+            await self._view.close_drawer()
+            self._page.navigate("/dm")
+
         return ft.Container(
             content=ft.Row(
                 controls=[
@@ -542,6 +546,7 @@ class ChatHubView:
             padding=ft.Padding.symmetric(horizontal=16, vertical=10),
             border_radius=Radius.FULL,
             ink=True,
+            on_click=_tap,
         )
 
     def _section_label(self, text: str, trailing: ft.Control | None = None) -> ft.Container:
