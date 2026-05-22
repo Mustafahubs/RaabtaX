@@ -1,0 +1,244 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002109",
+                        "on-primary": "#002e6a",
+                        "on-tertiary": "#003915",
+                        "secondary-container": "#3c4a5e",
+                        "on-primary-fixed": "#001a42",
+                        "on-error": "#690005",
+                        "surface-variant": "#2d3449",
+                        "surface-container-low": "#131b2e",
+                        "inverse-on-surface": "#283044",
+                        "on-secondary-fixed-variant": "#3a485c",
+                        "primary-fixed-dim": "#adc6ff",
+                        "primary": "#adc6ff",
+                        "primary-fixed": "#d8e2ff",
+                        "inverse-surface": "#dae2fd",
+                        "tertiary-fixed-dim": "#4ae176",
+                        "on-secondary": "#233144",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#adc6ff",
+                        "on-surface": "#dae2fd",
+                        "tertiary-fixed": "#6bff8f",
+                        "surface-container-lowest": "#060e20",
+                        "secondary": "#b9c7e0",
+                        "tertiary-container": "#00a74b",
+                        "on-primary-container": "#00285d",
+                        "on-tertiary-container": "#003111",
+                        "on-tertiary-fixed-variant": "#005321",
+                        "on-secondary-fixed": "#0d1c2f",
+                        "background": "#0b1326",
+                        "secondary-fixed": "#d5e3fd",
+                        "outline": "#8c909f",
+                        "surface-dim": "#0b1326",
+                        "on-background": "#dae2fd",
+                        "surface-container": "#171f33",
+                        "outline-variant": "#424754",
+                        "surface-container-highest": "#2d3449",
+                        "surface": "#0b1326",
+                        "surface-container-high": "#222a3d",
+                        "surface-bright": "#31394d",
+                        "tertiary": "#4ae176",
+                        "primary-container": "#4d8eff",
+                        "inverse-primary": "#005ac2",
+                        "on-secondary-container": "#abb9d2",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004395",
+                        "secondary-fixed-dim": "#b9c7e0",
+                        "on-surface-variant": "#c2c6d6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target": "3rem",
+                        "margin-horizontal": "1rem",
+                        "stack-md": "0.75rem",
+                        "stack-sm": "0.25rem",
+                        "gutter": "0.5rem",
+                        "stack-lg": "1.5rem"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "label-sm": ["11px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1px", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        .obsidian-gradient {
+            background: radial-gradient(circle at top right, #1e293b, #0b1326);
+        }
+        input:focus + label, input:not(:placeholder-shown) + label {
+            transform: translateY(-24px) scale(0.85);
+            color: #adc6ff;
+        }
+    </style>
+</head>
+<body class="obsidian-gradient min-h-screen flex flex-col items-center justify-center overflow-x-hidden">
+<!-- Top App Bar (Shared Component Logic - Suppression applied as this is Transactional) -->
+<!-- The TopAppBar is suppressed per "Destination Rule" for Transactional screens -->
+<main class="w-full max-w-[428px] min-h-screen flex flex-col px-6 py-12 relative z-10">
+<!-- Header Section -->
+<header class="mb-10 animate-fade-in">
+<div class="w-12 h-12 bg-primary-container rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">
+                    shield_person
+                </span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-2">Create Account</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Join the Obsidian Flux network and experience high-fidelity focus.</p>
+</header>
+<!-- Registration Form -->
+<form class="flex flex-col gap-6" onsubmit="event.preventDefault();">
+<!-- Full Name Input -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container border border-outline-variant/30 rounded-2xl text-on-surface font-body-lg text-body-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-300 peer" id="full-name" placeholder=" " type="text">
+<label class="absolute left-12 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all duration-300 pointer-events-none peer-focus:text-primary peer-focus:-translate-y-[28px] peer-focus:text-xs peer-[:not(:placeholder-shown)]:-translate-y-[28px] peer-[:not(:placeholder-shown)]:text-xs" for="full-name">
+                    Full Name
+                </label>
+</div>
+<!-- Email Address Input -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</div>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container border border-outline-variant/30 rounded-2xl text-on-surface font-body-lg text-body-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-300 peer" id="email" placeholder=" " type="email">
+<label class="absolute left-12 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all duration-300 pointer-events-none peer-focus:text-primary peer-focus:-translate-y-[28px] peer-focus:text-xs peer-[:not(:placeholder-shown)]:-translate-y-[28px] peer-[:not(:placeholder-shown)]:text-xs" for="email">
+                    Email Address
+                </label>
+</div>
+<!-- Phone Number Input -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">call</span>
+</div>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container border border-outline-variant/30 rounded-2xl text-on-surface font-body-lg text-body-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-300 peer" id="phone" placeholder=" " type="tel">
+<label class="absolute left-12 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all duration-300 pointer-events-none peer-focus:text-primary peer-focus:-translate-y-[28px] peer-focus:text-xs peer-[:not(:placeholder-shown)]:-translate-y-[28px] peer-[:not(:placeholder-shown)]:text-xs" for="phone">
+                    Phone Number
+                </label>
+</div>
+<!-- Password Input -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="w-full h-14 pl-12 pr-12 bg-surface-container border border-outline-variant/30 rounded-2xl text-on-surface font-body-lg text-body-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-300 peer" id="password" placeholder=" " type="password">
+<label class="absolute left-12 top-1/2 -translate-y-1/2 text-on-surface-variant font-body-md text-body-md transition-all duration-300 pointer-events-none peer-focus:text-primary peer-focus:-translate-y-[28px] peer-focus:text-xs peer-[:not(:placeholder-shown)]:-translate-y-[28px] peer-[:not(:placeholder-shown)]:text-xs" for="password">
+                    Choose Password
+                </label>
+<button class="absolute inset-y-0 right-4 flex items-center text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+<!-- Terms of Service Checkbox -->
+<div class="flex items-start gap-3 mt-2 px-1">
+<div class="relative flex items-center justify-center">
+<input class="peer h-5 w-5 rounded border-outline-variant bg-surface-container-high text-primary focus:ring-primary focus:ring-offset-background transition-all" id="terms" type="checkbox">
+<span class="material-symbols-outlined absolute opacity-0 peer-checked:opacity-100 text-on-primary pointer-events-none text-[16px] font-bold">check</span>
+</div>
+<label class="font-label-lg text-label-lg text-on-surface-variant cursor-pointer select-none leading-tight" for="terms">
+                    I agree to the <span class="text-primary font-semibold">Terms of Service</span> and <span class="text-primary font-semibold">Privacy Policy</span>.
+                </label>
+</div>
+<!-- Primary Action Button -->
+<button class="mt-4 w-full h-14 bg-primary text-on-primary font-title-lg text-title-lg rounded-full shadow-lg shadow-primary/30 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 group">
+                Continue
+                <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</form>
+<!-- Secondary Options -->
+<footer class="mt-auto pt-10 text-center">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                Already have an account? <button class="text-primary font-bold hover:underline">Sign In</button>
+</p>
+<div class="mt-8 flex items-center gap-4">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="font-label-sm text-label-sm text-outline-variant">OR CONNECT WITH</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<div class="mt-6 flex justify-center gap-4">
+<button class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-on-surface hover:bg-surface-variant/40 transition-colors">
+<img alt="Google Logo" class="w-6 h-6 grayscale opacity-80 group-hover:grayscale-0" data-alt="A clean, minimalist 3D rendering of the Google logo appearing as a translucent glass icon on a dark, obsidian-textured surface. The lighting is focused and cinematic, creating soft highlights on the curves of the 'G' while maintaining a high-end corporate modern aesthetic. The atmosphere is professional and secure." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7pZ0r8Se8RaoGYVtMlLnDLYLt_HQclaBfxNgB7y7S-zqGPni7hVlFUDSSsQWRL1gZ5TKmePYuBWbsyzTZZL7Atw20zftmzLejPLrDsEpr4a6jDTG3mcyPcPPeoItK6Y2Utb3LBfcL4Q42nk1EE7qZtyTG7CDHSDZ6pBxwrbrQpLCy4A0n2RyzajIrR6uUgIGBNNhuM_12zKgS2JxIRWobpOQRaE6yZ-AL12mi7Rx0BVHnx-Mz4_nydGc9zHYj_6GnrqNGNQCbzRE">
+</button>
+<button class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-on-surface hover:bg-surface-variant/40 transition-colors">
+<span class="material-symbols-outlined text-[24px]">fingerprint</span>
+</button>
+</div>
+</footer>
+</main>
+<!-- Visual Atmosphere Elements (Bento-inspired decorative glass) -->
+<div class="fixed top-[-10%] right-[-10%] w-80 h-80 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="fixed bottom-[-10%] left-[-10%] w-60 h-60 bg-tertiary/5 rounded-full blur-[100px] pointer-events-none"></div>
+<!-- BottomNavBar (Shared Component Logic - Suppression applied as this is Transactional) -->
+<!-- The BottomNavBar is suppressed per "Destination Rule" for Transactional screens -->
+<script>
+        // Simple micro-interaction for password visibility toggle
+        const passwordInput = document.getElementById('password');
+        const toggleBtn = passwordInput.nextElementSibling;
+        
+        toggleBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            toggleBtn.innerHTML = `<span class="material-symbols-outlined text-[20px]">${isPassword ? 'visibility_off' : 'visibility'}</span>`;
+        });
+
+        // Floating label simulation for inputs
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('blur', (e) => {
+                if (e.target.value !== "") {
+                    e.target.classList.add('not-empty');
+                } else {
+                    e.target.classList.remove('not-empty');
+                }
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Chat Interface</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary": "#003915",
+                      "secondary-container": "#3c4a5e",
+                      "error": "#ffb4ab",
+                      "on-tertiary-fixed": "#002109",
+                      "on-primary": "#002e6a",
+                      "inverse-surface": "#dae2fd",
+                      "on-secondary": "#233144",
+                      "tertiary-fixed-dim": "#4ae176",
+                      "on-error-container": "#ffdad6",
+                      "surface-tint": "#adc6ff",
+                      "on-surface": "#dae2fd",
+                      "on-primary-fixed": "#001a42",
+                      "on-error": "#690005",
+                      "surface-variant": "#2d3449",
+                      "surface-container-low": "#131b2e",
+                      "inverse-on-surface": "#283044",
+                      "on-secondary-fixed-variant": "#3a485c",
+                      "primary-fixed-dim": "#adc6ff",
+                      "primary": "#adc6ff",
+                      "primary-fixed": "#d8e2ff",
+                      "outline": "#8c909f",
+                      "on-background": "#dae2fd",
+                      "surface-dim": "#0b1326",
+                      "surface-container": "#171f33",
+                      "outline-variant": "#424754",
+                      "surface-container-highest": "#2d3449",
+                      "tertiary-fixed": "#6bff8f",
+                      "secondary": "#b9c7e0",
+                      "surface-container-lowest": "#060e20",
+                      "on-primary-container": "#00285d",
+                      "tertiary-container": "#00a74b",
+                      "on-tertiary-container": "#003111",
+                      "on-tertiary-fixed-variant": "#005321",
+                      "on-secondary-fixed": "#0d1c2f",
+                      "background": "#0b1326",
+                      "secondary-fixed": "#d5e3fd",
+                      "on-secondary-container": "#abb9d2",
+                      "error-container": "#93000a",
+                      "on-primary-fixed-variant": "#004395",
+                      "secondary-fixed-dim": "#b9c7e0",
+                      "on-surface-variant": "#c2c6d6",
+                      "surface": "#0b1326",
+                      "surface-container-high": "#222a3d",
+                      "surface-bright": "#31394d",
+                      "primary-container": "#4d8eff",
+                      "tertiary": "#4ae176",
+                      "inverse-primary": "#005ac2"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "stack-lg": "1.5rem",
+                      "stack-md": "0.75rem",
+                      "touch-target": "3rem",
+                      "margin-horizontal": "1rem",
+                      "stack-sm": "0.25rem",
+                      "gutter": "0.5rem"
+              },
+              "fontFamily": {
+                      "body-md": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "title-lg": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "label-lg": ["Inter"],
+                      "headline-lg-mobile": ["Inter"],
+                      "label-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1px", "fontWeight": "500"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "label-sm": ["11px", {"lineHeight": "16px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .glass-panel { backdrop-filter: blur(20px); background: rgba(30, 41, 59, 0.7); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md text-body-md overflow-hidden h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="bg-surface-container-low border-b border-outline-variant/50 flex justify-between items-center px-4 h-14 w-full top-0 z-40">
+<div class="flex items-center gap-4">
+<button class="hover:bg-surface-variant/20 transition-colors duration-200 p-2 rounded-full" id="menu-toggle">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+</button>
+<h1 class="font-title-lg text-title-lg text-primary"># general-chat</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="hover:bg-surface-variant/20 transition-colors duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+</button>
+<button class="hover:bg-surface-variant/20 transition-colors duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Navigation Drawer Overlay -->
+<div class="fixed inset-0 bg-black/60 z-50 opacity-0 pointer-events-none transition-opacity duration-300" id="drawer-overlay"></div>
+<!-- Navigation Drawer Content -->
+<aside class="fixed inset-y-0 left-0 z-[60] flex h-full w-80 rounded-r-lg bg-surface-container shadow-xl -translate-x-full transition-transform duration-300 ease-in-out" id="drawer">
+<!-- Server Rail -->
+<div class="w-16 h-full bg-surface-container-lowest flex flex-col items-center py-4 gap-4 border-r border-outline-variant/20">
+<div class="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-on-primary font-bold shadow-lg">S1</div>
+<div class="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center text-on-surface-variant font-bold hover:rounded-2xl transition-all">S2</div>
+<button class="w-12 h-12 border-2 border-dashed border-outline-variant rounded-full flex items-center justify-center text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<!-- Channels & DM Content -->
+<div class="flex-1 flex flex-col h-full overflow-hidden">
+<!-- Header Profile Section -->
+<div class="p-6 flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="User Profile" class="w-12 h-12 rounded-full border-2 border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdzQejTD_shvrtM37JuYQoe51IkFV77SNWbgJjyylUtbUhz1EXaAK7_ILj3Xsi4eKcLWR17SsorXRxzqrt7zH89ysfZ42f0P0DDfNSZVHrPMS9py7ZRuvuCgadHGQ3EI-1-JvRqiNziJ6RX21oeC1Mc_0WLtgOju-Kp6MkvoE1uQVPBsTL3uUKu-FbF9gfrnyQZIQ_hVqR8wbNJE5xxdR83_r3guzofcHm7nkGxHKMqBCoPXGPStEYd9d8kXyj42wFOAk46HVblqE">
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-tertiary border-2 border-surface-container rounded-full shadow-sm"></div>
+</div>
+<div>
+<p class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Alex Chen</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Online</p>
+</div>
+</div>
+</div>
+<!-- List Section -->
+<nav class="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-6">
+<!-- Text Channels -->
+<div>
+<h3 class="px-4 py-2 text-label-lg font-label-lg text-outline uppercase tracking-wider">Text Channels</h3>
+<div class="space-y-1">
+<a class="bg-secondary-container text-on-secondary-container rounded-full px-4 py-3 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="tag">tag</span>
+<span class="font-body-md text-body-md"># general</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="tag">tag</span>
+<span class="font-body-md text-body-md"># coding-help</span>
+</a>
+</div>
+</div>
+<!-- Direct Messages -->
+<div>
+<div class="flex items-center justify-between px-4 py-2">
+<h3 class="text-label-lg font-label-lg text-outline uppercase tracking-wider">Direct Messages</h3>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="add">add</span>
+</div>
+<div class="space-y-1">
+<div class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 flex items-center gap-3 transition-colors cursor-pointer">
+<div class="relative">
+<img alt="Sarah" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdYGAXoNlYf5peizUNIfZ1rlE6F59e5t1-rCTC1-zOyL5kbeJZMbQcm-4T62VHoBSGMJXnOv0urDSDXHWnfqnDHCUQU7JLCLXh88YJYmHb8Tgr8U7JB1tUmTGSYFo2EyNiVqAl53dnjFBaRdzsHyqMnCm-FtgC4HCxZLGqRthMKS6AZrz869h5PDHPbdf_Wb7noasLNyGCdeYokKa6gHQ_y492fx8lPsyz_jOI2laY3ZcYkvxTIPryFnigJLCFR_6q3fJOf-ugO9g">
+<div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-tertiary border-2 border-surface-container rounded-full"></div>
+</div>
+<span class="font-body-md text-body-md flex-1">Sarah Mitchell</span>
+</div>
+<div class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 flex items-center gap-3 transition-colors cursor-pointer">
+<div class="relative">
+<img alt="James" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXU0B8715ZbKHYZ8uTt4syEfd78sct6l7ceGbE4i3VUe33nJe3wJ_1Rxzxjn72wt_8Dp5bZpE9tFGATDrfGeTFRV30iM-Ahi5U7HoBMxypfTNIKUeKgjLJXdtontlTuPVTP9Rn-996o6rY4JF5fXbHJsRB1C6r2dQbwEhZMbcTMAdTXLJ0wkjTSK_r_kJ1u60vITZ4g81zPmBgxHgadQOQF_PRTwXjUzgsUlNkh949EVKkJG_TSE48jjltphqa08lh8SdB1qRdKGQ">
+<div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-outline-variant border-2 border-surface-container rounded-full"></div>
+</div>
+<span class="font-body-md text-body-md flex-1">James Holden</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Bottom Settings -->
+<div class="p-2 border-t border-outline-variant/30">
+<a class="text-on-surface-variant hover:bg-surface-variant/30 rounded-full px-4 py-3 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Chat Canvas -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6 pb-24">
+<!-- Message 1 -->
+<div class="flex gap-3 group">
+<img alt="User A" class="w-10 h-10 rounded-full shrink-0 mt-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqRzx4xrYiH7EIwCEd53L0hurJNfBTggbSRy2l4Wz_I3oh9b9LoV9irUdpGq4fxeltHuLwEkUkI7lJtvSu3KHJ6HyQMaI4n_R3twZbDTDls5tygIRt3BbgWlzKDMcxhOjFUWuGFqX5sAhHhNkb0-JNP1lx1YRuHvir8TChVHSL4-LrwqXEai_k9us8jOLaWYXCwlG5jW2cLzZtOfKias7NcfcZ-96tRoU-Cb6lE1LQxeyUYkgFhc7ABLSnkkz5sl-Nh4DIDAvbcx8">
+<div class="flex flex-col gap-1 max-w-[85%]">
+<div class="flex items-baseline gap-2">
+<span class="font-title-lg text-primary">Marcus Wright</span>
+<span class="text-label-sm font-label-sm text-outline-variant">2:30 PM</span>
+</div>
+<div class="bg-surface-container-high rounded-r-2xl rounded-bl-2xl p-3 text-on-surface shadow-sm">
+                    Hey everyone! How's the progress on the new design system components?
+                </div>
+</div>
+</div>
+<!-- Message 2 with Link Preview -->
+<div class="flex gap-3 group">
+<img alt="User B" class="w-10 h-10 rounded-full shrink-0 mt-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjdzpXnsoaA6VZ8ldC6qtOnmzr4BeMvtklR3sTV-MQyqLFPuu7XvuHb4b58F1WkLfy9FPZ70HQei1E-GTaT3yyRvrdiLON4A1xoxNgtfbEqb_V1S5vXvofpqHqcduDY7PW-2oDnAg4TzclPbXli0LfyBX-K6MUTwaN6xuG0m6KqLogLn2QA0nK_ptOCRpxWaYUDHN_Ro33QjyC5by-7F321ows5bpcPJ6nn5H4uEjZ5-hkks4z4B8qvTBHOC3lzC8OVyB8-7pljlY">
+<div class="flex flex-col gap-2 max-w-[85%]">
+<div class="flex items-baseline gap-2">
+<span class="font-title-lg text-tertiary">Elara Vance</span>
+<span class="text-label-sm font-label-sm text-outline-variant">2:32 PM</span>
+</div>
+<div class="bg-surface-container-high rounded-r-2xl rounded-bl-2xl p-3 text-on-surface shadow-sm">
+                    Check this out! I found the latest documentation for our Material 3 implementation.
+                </div>
+<!-- Link Preview Card -->
+<div class="bg-surface-container-low border border-outline-variant/30 rounded-lg overflow-hidden max-w-sm">
+<div class="aspect-video w-full bg-surface-container-highest relative overflow-hidden">
+<img class="w-full h-full object-cover opacity-80" data-alt="A macro photograph of a sleek, high-tech digital user interface displayed on a futuristic curved monitor. The screen glows with neon accents of cyan and violet, showcasing intricate data visualizations and fluid typography. The setting is a darkened, professional design studio with soft ambient lighting, creating a high-fidelity, sophisticated tech atmosphere with a focus on precision and digital craftsmanship." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoby-2CdjKbt6aeziu25n-BQcG1QTqHezdhx_uu26_T2EvOVPVU5s5Fsl--K8VDPzyupW2PkXC6yEysMwkmLPLiZizVRG21jcfJmoJdQfV7NSjHB78Ni1HhfQxZg_7G3GriESS2IymIfQFcRJLkTlViFJJBqKkfxdd9qe62KzJynjvQhDG82lvO59YX_Qsshou2ylBytpbf1xYJ6VLLddGLMf7UrnszMbFtzJKUPI_cbV1Aloo0yIG-SqjsTJJzmlUwIKc05lWrZw">
+</div>
+<div class="p-3">
+<p class="font-title-lg text-title-lg text-primary mb-1">Design Guidelines v4.0</p>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Comprehensive documentation for the global design system including color tokens, typography scales, and motion principles.</p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-sm text-outline" data-icon="link">link</span>
+<span class="text-label-sm font-label-sm text-outline">design-system.corp/docs</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Date Separator -->
+<div class="relative flex items-center py-4">
+<div class="flex-grow border-t border-outline-variant/20"></div>
+<span class="flex-shrink mx-4 text-label-sm font-label-sm text-outline uppercase tracking-widest">New Messages</span>
+<div class="flex-grow border-t border-outline-variant/20"></div>
+</div>
+<!-- Message Clustered -->
+<div class="flex gap-3 group">
+<div class="w-10 shrink-0"></div> <!-- Empty space instead of avatar for clustered -->
+<div class="flex flex-col gap-1 max-w-[85%]">
+<div class="bg-surface-container-high rounded-r-2xl rounded-bl-2xl p-3 text-on-surface shadow-sm">
+                    Looks fantastic! The glassmorphism effects are really coming together.
+                </div>
+</div>
+</div>
+</main>
+<!-- Bottom Input Bar -->
+<div class="fixed bottom-0 w-full p-4 glass-panel z-40 flex items-center gap-3">
+<div class="flex-1 bg-surface-container-highest border border-outline-variant/50 rounded-full flex items-center px-4 h-12 transition-all focus-within:border-primary">
+<button class="p-1 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="attach_file">attach_file</span>
+</button>
+<input class="bg-transparent border-none focus:ring-0 flex-1 text-on-surface placeholder:text-on-surface-variant px-2" placeholder="Message # general-chat" type="text">
+<button class="p-1 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="mood">mood</span>
+</button>
+</div>
+<button class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-on-primary shadow-lg scale-100 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="send" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+<!-- Navigation Bar (Mobile) -->
+<!-- Hidden by default for focus, but structure included as per JSON requirements -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 h-16 bg-surface-container-high/80 backdrop-blur-xl border-t border-outline-variant/30 hidden">
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl p-2">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2">
+<span class="material-symbols-outlined" data-icon="alternate_email">alternate_email</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+</nav>
+<script>
+        const menuBtn = document.getElementById('menu-toggle');
+        const drawer = document.getElementById('drawer');
+        const overlay = document.getElementById('drawer-overlay');
+
+        function toggleDrawer() {
+            drawer.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('opacity-0');
+            overlay.classList.toggle('pointer-events-none');
+        }
+
+        menuBtn.addEventListener('click', toggleDrawer);
+        overlay.addEventListener('click', toggleDrawer);
+
+        // Micro-interaction for input focus
+        const input = document.querySelector('input');
+        const inputWrapper = input.parentElement;
+        input.addEventListener('focus', () => {
+            inputWrapper.classList.add('ring-2', 'ring-primary/20');
+        });
+        input.addEventListener('blur', () => {
+            inputWrapper.classList.remove('ring-2', 'ring-primary/20');
+        });
+    </script>
+</body></html>

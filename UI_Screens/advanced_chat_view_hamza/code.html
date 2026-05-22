@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        @keyframes pulse-dots {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        .dot-1 { animation: pulse-dots 1.5s infinite 0s; }
+        .dot-2 { animation: pulse-dots 1.5s infinite 0.2s; }
+        .dot-3 { animation: pulse-dots 1.5s infinite 0.4s; }
+        
+        .pop-up-anim {
+            animation: popUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes popUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#003915",
+                        "on-primary-container": "#00285d",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#6bff8f",
+                        "inverse-primary": "#005ac2",
+                        "on-primary-fixed": "#001a42",
+                        "tertiary-container": "#00a74b",
+                        "outline": "#8c909f",
+                        "secondary-container": "#3c4a5e",
+                        "on-secondary-container": "#abb9d2",
+                        "on-tertiary-fixed": "#002109",
+                        "surface-container-low": "#131b2e",
+                        "on-tertiary-fixed-variant": "#005321",
+                        "tertiary": "#4ae176",
+                        "on-error-container": "#ffdad6",
+                        "background": "#0b1326",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-variant": "#2d3449",
+                        "inverse-surface": "#dae2fd",
+                        "surface-dim": "#0b1326",
+                        "primary-fixed-dim": "#adc6ff",
+                        "secondary": "#b9c7e0",
+                        "primary-container": "#4d8eff",
+                        "surface-container-high": "#222a3d",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "primary": "#adc6ff",
+                        "inverse-on-surface": "#283044",
+                        "secondary-fixed-dim": "#b9c7e0",
+                        "surface-container": "#171f33",
+                        "secondary-fixed": "#d5e3fd",
+                        "on-secondary": "#233144",
+                        "on-surface": "#dae2fd",
+                        "on-secondary-fixed": "#0d1c2f",
+                        "surface-container-highest": "#2d3449",
+                        "tertiary-fixed-dim": "#4ae176",
+                        "surface-tint": "#adc6ff",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-container": "#003111",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-bright": "#31394d",
+                        "surface-container-lowest": "#060e20",
+                        "on-primary": "#002e6a",
+                        "outline-variant": "#424754",
+                        "surface": "#0b1326",
+                        "on-secondary-fixed-variant": "#3a485c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "1.5rem",
+                        "touch-target": "3rem",
+                        "gutter": "0.5rem",
+                        "stack-md": "0.75rem",
+                        "stack-sm": "0.25rem",
+                        "margin-horizontal": "1rem"
+                    },
+                    "fontFamily": {
+                        "title-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "label-sm": ["11px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1px", "fontWeight": "500"}],
+                        "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface selection:bg-primary/30 min-h-screen flex flex-col font-body-md overflow-hidden">
+<!-- Top AppBar - As per Shared Components Logic -->
+<header class="fixed top-0 w-full z-50 bg-background/80 dark:bg-background/80 backdrop-blur-md shadow-sm flex items-center justify-between px-margin-horizontal h-touch-target">
+<div class="flex items-center gap-stack-md">
+<button class="material-symbols-outlined text-on-surface-variant active:scale-95 duration-150 p-2 hover:bg-surface-variant/50 rounded-full">arrow_back</button>
+<div class="flex items-center gap-stack-md">
+<div class="relative">
+<img alt="Hamza's profile picture" class="w-10 h-10 rounded-full object-cover border border-outline-variant/30" data-alt="A close-up professional portrait of a tech-savvy man named Hamza, featuring short dark hair, glasses, and a friendly expression. The lighting is soft and cinematic, with a cool blue and slate background that reflects a premium dark mode UI aesthetic. The overall mood is intelligent, professional, and modern, fitting for a high-end chat application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZqB4EQskTFTPn-bviR0Y6VW9njnSofEbhDDdtylQrAmK_N01b4bEXlLj6J4oZk8mnZHNqP2ZaSUgKXiM5eOU8TRF3r_6hTFk9j50bx0RfFckL_zogtu1dGi6X0uqWGmSd14ZbPsFFaZ0oCTel5SVQmaHr2tvhyGDWG0TbvSyhcQ4RMXBRWsIhTUZhdcYEpxXz_o_TS9U1Rp9zPiDHb5GiDrWuNzUvG2sQyAQGZGvAII7Y-Qw9AIE6UTwIUszpNv9n8q7_UQFzBcE"/>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-tertiary border-2 border-background rounded-full"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-title-lg text-title-lg leading-tight text-on-surface">Hamza</span>
+<span class="text-label-sm font-label-sm text-tertiary opacity-80">Active now</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-gutter">
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-variant/50 active:scale-95 duration-150 rounded-full" data-icon="call">call</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-variant/50 active:scale-95 duration-150 rounded-full" data-icon="videocam">videocam</button>
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:bg-surface-variant/50 active:scale-95 duration-150 rounded-full" data-icon="more_vert">more_vert</button>
+</div>
+</header>
+<!-- Main Message Stream Canvas -->
+<main class="flex-1 overflow-y-auto px-margin-horizontal pt-20 pb-32 space-y-stack-lg custom-scrollbar">
+<!-- Message 1: Image Attachment (Outgoing style) -->
+<div class="flex justify-end">
+<div class="max-w-[85%] relative group">
+<div class="rounded-lg overflow-hidden border border-outline-variant/20 shadow-md">
+<img alt="Shared workspace photo" class="w-full aspect-video object-cover" data-alt="A wide-angle professional photograph of a futuristic high-tech collaborative workspace, featuring sleek glass desks and ergonomic furniture. The lighting is atmospheric with deep navy shadows and vibrant cyan accents, mirroring an Obsidian Flux design system. The scene is quiet, focused, and premium, representing a modern digital nomad environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWB7x3rlcykcXs4il6h9qmnxP2BMLjCc-mLmyMdwym_RCEUnsnl4y6FbWuS2GWK8uYTWuI8x_ccwFQ4xIIKkmygCjXEXfJLojMlvf0MQKWMFZcoQ2ijifAEXROtdod4du_woruYL9FxANQhWVetQalyY1Uo7O7ShuzL4NhYVP8fvHIiPQZQjuo-cMocXfPaB4PJTz-0bW-Ax24Mwqked-lhx-Yb_pVEC395LSr8aWgjROsv7IgBtxCSGstPVZOVPEf3DQc5WtPlHY"/>
+<div class="absolute bottom-2 right-3 flex items-center gap-1 bg-background/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
+<span class="text-white text-[10px] font-medium">10:42 AM</span>
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Message 2: PDF File Block (Incoming style) -->
+<div class="flex justify-start">
+<div class="bg-surface-container-high rounded-tr-lg rounded-br-lg rounded-bl-lg p-stack-md max-w-[85%] border border-outline-variant/10">
+<div class="flex items-center gap-stack-md bg-surface-container-highest/50 p-3 rounded-DEFAULT border border-outline-variant/20">
+<div class="w-10 h-10 rounded-full bg-error-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-on-surface font-medium text-body-md truncate">Project_Requirements.pdf</p>
+<p class="text-on-surface-variant text-label-sm">4.2 MB</p>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-variant rounded-full transition-colors">download</button>
+</div>
+<div class="mt-2 flex justify-end">
+<span class="text-[10px] text-on-surface-variant/60">10:45 AM</span>
+</div>
+</div>
+</div>
+<!-- Message 3: URL + Link Preview Card (Incoming style) -->
+<div class="flex justify-start">
+<div class="flex flex-col gap-2 max-w-[85%]">
+<div class="bg-surface-container-high rounded-tr-lg rounded-br-lg rounded-bl-lg p-3 border border-outline-variant/10 text-body-md text-on-surface">
+                    Check out the documentation for Flet, it looks promising: https://flet.dev/docs
+                </div>
+<!-- Link Preview Card -->
+<div class="bg-surface-container rounded-lg overflow-hidden border-l-4 border-primary border border-outline-variant/10 shadow-sm flex">
+<div class="flex-1 p-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[16px]">language</span>
+<span class="text-primary text-[11px] font-bold tracking-wider uppercase">Flet.dev</span>
+</div>
+<h4 class="text-on-surface font-bold text-body-md mb-1">Flet Docs - Build Flutter apps in Python</h4>
+<p class="text-on-surface-variant text-label-sm line-clamp-2">Flet enables developers to easily build real-time web, mobile and desktop apps in Python. No frontend experience required.</p>
+</div>
+<div class="w-24 bg-surface-container-highest shrink-0">
+<img alt="Flet framework preview" class="w-full h-full object-cover" data-alt="A clean, minimalist digital graphic showing a Python logo morphing into a Flutter logo with glowing electrical pathways. The aesthetic is sleek and technical, using a palette of deep slates and vibrant blues to match an Obsidian Flux UI. The lighting is high-contrast with glowing neon elements against a dark matte background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKbDdLpVTjynjrQDDlZPDsuWX29JUi8Jb7Y2wfvKdEY323SnkpDOzfls3-TlCNt9_BtaEAuiHqdNAEmoGtuxNE_0Q0zoVqxjU5Yy6ooDpj8Eaf0-muZWeVU3QDx0VPdhpqy9SGehH8dt4bqAaf9gm2DbO-zdZ0VsM1x0vFBY30D3Q9n1cNBK3h3kXn0wX_COt90xOddj77-olljKk3XZY_Wkvuv6kppHSD-XFgDyheiHmU6aJu35xz2ZWfQdpSleGHUhqplNJMvIU"/>
+</div>
+</div>
+<div class="flex justify-end">
+<span class="text-[10px] text-on-surface-variant/60">10:48 AM</span>
+</div>
+</div>
+</div>
+<!-- Typing Indicator -->
+<div class="flex items-center gap-2 px-2">
+<div class="flex gap-1 items-center justify-center py-2 px-3 bg-surface-container-low/40 rounded-full border border-outline-variant/10">
+<div class="w-1.5 h-1.5 bg-tertiary rounded-full dot-1"></div>
+<div class="w-1.5 h-1.5 bg-tertiary rounded-full dot-2"></div>
+<div class="w-1.5 h-1.5 bg-tertiary rounded-full dot-3"></div>
+</div>
+<span class="text-label-sm text-tertiary/70 italic">Hamza is typing</span>
+</div>
+</main>
+<!-- Bottom Input Area -->
+<div class="fixed bottom-0 w-full z-50 bg-background/80 dark:bg-background/80 backdrop-blur-md pb-6 px-margin-horizontal">
+<!-- Quick Access Strip (Expanded state) -->
+<div class="flex justify-start gap-4 mb-2 ml-2">
+<button class="pop-up-anim flex flex-col items-center gap-1 group">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 group-active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-primary text-[20px]">photo_camera</span>
+</div>
+<span class="text-[9px] font-medium text-primary uppercase tracking-tighter">Camera</span>
+</button>
+<button class="pop-up-anim flex flex-col items-center gap-1 group" style="animation-delay: 0.05s;">
+<div class="w-10 h-10 rounded-full bg-secondary-container/30 flex items-center justify-center border border-secondary-container/50 group-active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-secondary text-[20px]">image</span>
+</div>
+<span class="text-[9px] font-medium text-secondary uppercase tracking-tighter">Gallery</span>
+</button>
+<button class="pop-up-anim flex flex-col items-center gap-1 group" style="animation-delay: 0.1s;">
+<div class="w-10 h-10 rounded-full bg-tertiary-container/20 flex items-center justify-center border border-tertiary-container/40 group-active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-tertiary text-[20px]">mic</span>
+</div>
+<span class="text-[9px] font-medium text-tertiary uppercase tracking-tighter">Audio</span>
+</button>
+</div>
+<!-- Pill Input -->
+<div class="flex items-center gap-stack-md">
+<div class="flex-1 flex items-center bg-surface-container rounded-full h-12 px-4 border border-outline-variant/30 focus-within:border-primary transition-all shadow-lg">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">add_circle</button>
+<input class="bg-transparent border-none focus:ring-0 flex-1 text-body-md text-on-surface placeholder:text-on-surface-variant/50 mx-2" placeholder="Message Hamza..." type="text"/>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">sentiment_satisfied</button>
+</div>
+<button class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg active:scale-90 duration-150 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+<script>
+        // Micro-interaction for the input field to simulate focus
+        const input = document.querySelector('input');
+        const inputContainer = input.parentElement;
+        
+        input.addEventListener('focus', () => {
+            inputContainer.classList.add('ring-2', 'ring-primary/20');
+        });
+        
+        input.addEventListener('blur', () => {
+            inputContainer.classList.remove('ring-2', 'ring-primary/20');
+        });
+
+        // Simple parallax scroll effect for the message stream
+        const mainContent = document.querySelector('main');
+        mainContent.addEventListener('scroll', () => {
+            const opacity = 1 - Math.min(mainContent.scrollTop / 50, 1);
+            // Dynamic Header transparency logic could go here
+        });
+    </script>
+</body></html>

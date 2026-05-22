@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-bright": "#31394d",
+                    "inverse-on-surface": "#283044",
+                    "surface-container-highest": "#2d3449",
+                    "surface-container": "#171f33",
+                    "on-tertiary-fixed": "#002109",
+                    "secondary": "#b9c7e0",
+                    "on-surface": "#dae2fd",
+                    "primary-fixed": "#d8e2ff",
+                    "inverse-surface": "#dae2fd",
+                    "surface-dim": "#0b1326",
+                    "on-primary-container": "#00285d",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#3a485c",
+                    "secondary-fixed-dim": "#b9c7e0",
+                    "tertiary": "#4ae176",
+                    "on-background": "#dae2fd",
+                    "on-secondary": "#233144",
+                    "secondary-fixed": "#d5e3fd",
+                    "on-primary-fixed-variant": "#004395",
+                    "on-primary-fixed": "#001a42",
+                    "on-primary": "#002e6a",
+                    "surface-container-lowest": "#060e20",
+                    "primary-fixed-dim": "#adc6ff",
+                    "primary-container": "#4d8eff",
+                    "surface-container-high": "#222a3d",
+                    "tertiary-container": "#00a74b",
+                    "outline": "#8c909f",
+                    "surface-tint": "#adc6ff",
+                    "surface-variant": "#2d3449",
+                    "secondary-container": "#3c4a5e",
+                    "tertiary-fixed-dim": "#4ae176",
+                    "outline-variant": "#424754",
+                    "on-error": "#690005",
+                    "on-tertiary-fixed-variant": "#005321",
+                    "on-tertiary": "#003915",
+                    "on-secondary-container": "#abb9d2",
+                    "background": "#0b1326",
+                    "primary": "#adc6ff",
+                    "on-surface-variant": "#c2c6d6",
+                    "on-error-container": "#ffdad6",
+                    "inverse-primary": "#005ac2",
+                    "on-tertiary-container": "#003111",
+                    "on-secondary-fixed": "#0d1c2f",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed": "#6bff8f",
+                    "surface-container-low": "#131b2e",
+                    "surface": "#0b1326"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "3rem",
+                    "gutter": "0.5rem",
+                    "stack-sm": "0.25rem",
+                    "stack-lg": "1.5rem",
+                    "stack-md": "0.75rem",
+                    "margin-horizontal": "1rem"
+            },
+            "fontFamily": {
+                    "title-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-sm": ["11px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .status-cutout {
+            box-shadow: 0 0 0 2px #0b1326;
+        }
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scroll-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col font-body-md overflow-x-hidden">
+<!-- Top App Bar -->
+<header class="bg-surface-container-low border-b border-outline-variant/50 sticky top-0 z-50 flex justify-between items-center px-4 h-14 w-full">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/20 transition-colors duration-200">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+</button>
+<h1 class="font-title-lg text-title-lg text-on-surface">Direct Messages</h1>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/20 transition-colors duration-200">
+<span class="material-symbols-outlined text-primary" data-icon="person_add">person_add</span>
+</button>
+</header>
+<main class="flex-1 pb-20">
+<!-- Navigation Tabs -->
+<nav class="flex border-b border-outline-variant/20 px-4 mt-2">
+<button class="px-4 py-3 text-primary border-b-2 border-primary transition-all font-label-lg text-label-lg">All Chats</button>
+<button class="px-4 py-3 text-on-surface-variant hover:text-on-surface transition-all font-label-lg text-label-lg">Online (14)</button>
+<button class="px-4 py-3 text-on-surface-variant hover:text-on-surface transition-all font-label-lg text-label-lg">Requests (3)</button>
+</nav>
+<!-- Active Friends Carousel -->
+<section class="py-6 overflow-x-auto scroll-hide">
+<div class="flex px-4 gap-6 min-w-max">
+<!-- Alex -->
+<div class="flex flex-col items-center gap-2">
+<div class="relative">
+<img alt="Alex" class="w-16 h-16 rounded-full object-cover border-2 border-outline-variant/30" data-alt="A professional close-up portrait of a young man with short brown hair and a friendly smile, set against a blurred urban background with cool blue and slate tones. The lighting is soft and cinematic, matching a premium dark mode UI aesthetic with deep shadows and vibrant accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBM_tXw6wDHrqeJD7uCW3An74ly_oFZcXn5PbOJewSvNnJLUD9sY_HaI_IQSprUkoNlgzsD_dZZSgrlCmgqd5rDnPWhRWuQbsQQGAK-zhwZBP4XDlBAeTi84WQ-lTDp7xQIREVFsyyEeCPNrNUoK4aCryiaDuF1wwYIxe5M6OCmcuNkNmY-MKH47W73CevGBIyv0cYXTVwZWl4FzZ-3YCxfGbf8vGLx0LQiU603TV76ImD-KoORmGJ5kSgtavun2DeQ_Pe4loHVfTc"/>
+<span class="absolute bottom-0 right-1 w-4 h-4 bg-tertiary rounded-full status-cutout"></span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Alex</span>
+</div>
+<!-- Sarah -->
+<div class="flex flex-col items-center gap-2">
+<div class="relative">
+<img alt="Sarah" class="w-16 h-16 rounded-full object-cover border-2 border-outline-variant/30" data-alt="A high-resolution portrait of a young woman with a sharp bob haircut and clear glasses, wearing a sleek black turtleneck. The background is a moody, dark grey gradient that emphasizes the cool, professional tone of the image, perfectly suited for a high-end obsidian-themed mobile interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBm4XreCPnpoXkPG1vWeIFSGfw2AeteRTmmCue6-16yocA-ciV6BftLNljRAa9YyxySBtBl4BIWlmtlbeZgBusKNs2J1nHLCdZmUlyZEpwzJ-ssJc2zutI0eVnOBulgGksqlX_-HkexJ3lY64X_rEr2zpXKm5JH86I4SugEE6-vWa6ef5LSiDhQeBHM7HrUVwT85ETjoozKSFyVsLx5_NrWnyc_7psLLrbIdsUucLkg2_Xzf7Cjfll4hEz3IkOCY3xSSAspbm5ix78"/>
+<div class="absolute bottom-0 right-1 w-4 h-4 bg-[#ffb74d] rounded-full status-cutout flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-[10px] text-background font-bold" data-icon="dark_mode" style="font-variation-settings: 'FILL' 1;">dark_mode</span>
+</div>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Sarah</span>
+</div>
+<!-- Marcus -->
+<div class="flex flex-col items-center gap-2">
+<div class="relative">
+<img alt="Marcus" class="w-16 h-16 rounded-full object-cover border-2 border-outline-variant/30" data-alt="A portrait of a distinguished man with a short beard and confident expression. He is photographed in low-key lighting that creates deep shadows and highlights his features, set against a dark, textured wall. The visual style is modern, tech-focused, and integrates seamlessly with a dark slate and blue color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5kuMDsUiGtfy3FrzGp8uRZqJlVpqj58txy1LVZTFJ_kxdp-tl_CgLRWyTOGT9-PYy3aSzY4jRH1w7NqwEwLCt8GYWeGM9VG_BWvJLqx4RuMRpkVUHsn-7Ax4pg8hVlodEWb1IsCKVXTnI2--Mjkd2WaJuxFCUd0Ennmp9m4xdDcyD9yP4EeuzhIf8cQoBDjxhYeGhmbR0jKVC7R1uuFjGyCkeYdMWwGaqkgZcabqACenVwhCunRIbEaLzm2vyFhmLQT8PUr0SWx0"/>
+<span class="absolute bottom-0 right-1 w-4 h-4 bg-outline-variant rounded-full status-cutout"></span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Marcus</span>
+</div>
+<!-- Jamie -->
+<div class="flex flex-col items-center gap-2">
+<div class="relative">
+<img alt="Jamie" class="w-16 h-16 rounded-full object-cover border-2 border-outline-variant/30" data-alt="A vibrant portrait of a young person with creative styling, featuring soft lighting and a minimalist dark background. The image has a high-fidelity, polished feel with a color temperature that complements deep blues and charcoal grays, ideal for a contemporary mobile social application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmCeML5Fai0p1bi_VIMORvagTnEqzfX7PNLq3ZOoEAme9iCCpUe5Ect2tm9NVFczg4BVlOMEHiSCKiJHjPXVEAsJH1kPZy57QDeLspJV3aFx45rEFh897I3yZuRFXe-rQTlm241P3faOZzAa5YTmIo1CdozF8BV3cfdrxmHIPEvh-HvWZBpiSMuMGL6jrv_Qvwn-qLdaKl-9JfkzsBWCfkiJENiYrsx3ZafCAVNVf-iUz2cBuyQ3jFErZjmYLDQ2pklMlA9ipDfV0"/>
+<span class="absolute bottom-0 right-1 w-4 h-4 bg-tertiary rounded-full status-cutout"></span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Jamie</span>
+</div>
+<!-- Elena -->
+<div class="flex flex-col items-center gap-2">
+<div class="relative">
+<img alt="Elena" class="w-16 h-16 rounded-full object-cover border-2 border-outline-variant/30" data-alt="A focused close-up of a professional woman with a calm demeanor, lit by a single source of cool-toned light that creates a dramatic, high-end aesthetic. The background is nearly black, allowing the subject to pop and ensuring consistency with a premium Obsidian dark-mode interface design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKJu3BKr_wUoPHxlkYP3u0KCFg8JTZJciiAZmJuTer64DLxkQrsVDu4-rjnyTT8BSGhZ8RXTbc7ulABL3dwu-DRQKXcO2dYY0xfHxpZncb7oyXosCmEzY_jYT-LFPh4BxD0lXBI9VuKX_bodD26iGMVlHNCuKKZLewXauVNPnEPJSgJy9ZkKWa2zpNo8XYBSQebJfFedRyBkCauZ-YW624ZO3dQlLf4RYmBqc78tMu7a-59mklVqEYAI8W40Gx1N9w-LS7tZq9GNU"/>
+<span class="absolute bottom-0 right-1 w-4 h-4 bg-tertiary rounded-full status-cutout"></span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Elena</span>
+</div>
+</div>
+</section>
+<!-- DM Conversation List -->
+<section class="flex flex-col">
+<!-- Row 1: Alex Rivers -->
+<div class="flex items-center gap-4 px-4 py-4 hover:bg-surface-variant/20 transition-all cursor-pointer">
+<div class="relative flex-shrink-0">
+<img alt="Alex" class="w-14 h-14 rounded-full object-cover" data-alt="A professional close-up portrait of a young man with short brown hair and a friendly smile, set against a blurred urban background with cool blue and slate tones. The lighting is soft and cinematic, matching a premium dark mode UI aesthetic with deep shadows and vibrant accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArGAcu13QmjyS5S6vDvDH5r4Hj4qBvv0taSB0Hc4Kl8Sswdodh7hjhIPqtHQP8zJQPOxUrFFCcVp3i4RBmjqY2SPC1AqYMIt_Ldxi7N1NgQQ2fAFlxwbTN-9OfA14uKOPVQUH932Bdrum95pHj6civF5HcQ8dh9qfC4dHgwz73_p9qIHoftT0CLxMLuxfTIV75qWjF7KGGgkSvLJOufFJT_k2kSNbRG_GfdacEk2KmUe5O_DC9p3ByvFb0G0nlDMKA6gTRQFsOsnE"/>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-tertiary rounded-full status-cutout"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Alex Rivers</h3>
+<span class="text-label-sm font-label-sm text-tertiary">2m ago</span>
+</div>
+<div class="flex justify-between items-center mt-1">
+<p class="font-body-md text-body-md text-on-surface font-semibold truncate">See you at 9 PM!</p>
+<span class="bg-primary text-on-primary-container text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">3</span>
+</div>
+</div>
+</div>
+<!-- Row 2: Sarah Chen -->
+<div class="flex items-center gap-4 px-4 py-4 hover:bg-surface-variant/20 transition-all cursor-pointer">
+<div class="relative flex-shrink-0">
+<img alt="Sarah" class="w-14 h-14 rounded-full object-cover" data-alt="A high-resolution portrait of a young woman with a sharp bob haircut and clear glasses, wearing a sleek black turtleneck. The background is a moody, dark grey gradient that emphasizes the cool, professional tone of the image, perfectly suited for a high-end obsidian-themed mobile interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8DlHqkCxDwXWhW2tQyuR6zb3UWffo3CQmsv8d_9bCw1IX-RJt9kFpWT6ynvjmJfnByC_HpZjB1P0CiOiaqmmjVa9Dn6-D_Z-yU5LW9WMIIQUqDD7537q7s7gB-jsi5cUV5UtXUj64b_s_7LLvivywaYB1JQoaRqaxLm3i6YbAvt6wzTauBUWcryZDBYcAv6TvZ5j7FmjGDv2CAr5G2qpbji_OE8aBZ4w-nhjvOkJDWeioOUzfJn7J7S7rjiLtYtgWTTBVpDTmGBo"/>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#ffb74d] rounded-full status-cutout flex items-center justify-center">
+<span class="material-symbols-outlined text-[8px] text-background font-bold" data-icon="dark_mode" style="font-variation-settings: 'FILL' 1;">dark_mode</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Sarah Chen</h3>
+<span class="text-label-sm font-label-sm text-on-surface-variant">15m ago</span>
+</div>
+<div class="flex justify-between items-center mt-1">
+<p class="font-body-md text-body-md text-on-surface-variant truncate">The files are ready.</p>
+</div>
+</div>
+</div>
+<!-- Row 3: Marcus Wright -->
+<div class="flex items-center gap-4 px-4 py-4 hover:bg-surface-variant/20 transition-all cursor-pointer">
+<div class="relative flex-shrink-0">
+<img alt="Marcus" class="w-14 h-14 rounded-full object-cover" data-alt="A portrait of a distinguished man with a short beard and confident expression. He is photographed in low-key lighting that creates deep shadows and highlights his features, set against a dark, textured wall. The visual style is modern, tech-focused, and integrates seamlessly with a dark slate and blue color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkXlrL1rTXujwlzaYWKq-LkhxEnz3PhNOZBTcxpoLQ3kMJLBE4Ag7eZ_INTjUw1GQcuCJ8yM5Gkh2LBMZKLtm-LnUb_PskVDq7ztZXTU2bvpKK2G1bktteQmpEBeQUFosjpHp4htnbbTFIdRzCRvvKysMWK7TpkfHQNHmYIF-SqDEEzwf9WY2OdfoNHcHT3V-eYPX2ulpuhFh0gfR9_nr1oyH9tdrqJZiqb5qN3_5sIjpZFCR1jUkkGo1IbsQG4O7v-lXZL3jXmIQ"/>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-outline-variant rounded-full status-cutout"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Marcus Wright</h3>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Yesterday</span>
+</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="done_all">done_all</span>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Thanks!</p>
+</div>
+</div>
+</div>
+<!-- Row 4: Jamie L. -->
+<div class="flex items-center gap-4 px-4 py-4 hover:bg-surface-variant/20 transition-all cursor-pointer">
+<div class="relative flex-shrink-0">
+<img alt="Jamie" class="w-14 h-14 rounded-full object-cover" data-alt="A vibrant portrait of a young person with creative styling, featuring soft lighting and a minimalist dark background. The image has a high-fidelity, polished feel with a color temperature that complements deep blues and charcoal grays, ideal for a contemporary mobile social application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuABUyFb3US9fEU8Y_29LP0mD2xhsQVfTaIup9S2ENt2MI7MGnl8pAHXspxnXENvNPrh5omv1snDqrTJAU4067cHoRDAGUvKE9MTQ-vTeL4646l4L4czkUWxaNVtuH7zGSBLwGsyjeGGrUYJ2sUfEooLBJXE6Ee8vglmZl6waq9H575LN44vz8utuvYNCQ4O8VDc0Qd4VuISS5dUjzPd8rRJnWJsR-ZX0Db0WjVFbQJp6qvHv_5SeYG_u8OVwHG_TTPe96M9bDJRmsg"/>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-tertiary rounded-full status-cutout"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<h3 class="font-title-lg text-title-lg text-on-surface truncate">Jamie L.</h3>
+<span class="text-label-sm font-label-sm text-on-surface-variant">2h ago</span>
+</div>
+<div class="flex justify-between items-center mt-1">
+<p class="font-body-md text-body-md text-on-surface-variant truncate">Let's hop on the call later?</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB for New Message -->
+<button class="fixed bottom-20 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-40 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<footer class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 h-16 bg-surface-container-high/80 backdrop-blur-xl border-t border-outline-variant/30">
+<!-- Messages (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl p-2 w-16 h-12 transition-transform scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="chat" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="font-label-sm text-label-sm">Messages</span>
+</a>
+<!-- Servers -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16 h-12 hover:text-primary transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="font-label-sm text-label-sm">Servers</span>
+</a>
+<!-- Notifications -->
+<a class="relative flex flex-col items-center justify-center text-on-surface-variant p-2 w-16 h-12 hover:text-primary transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-sm text-label-sm">Alerts</span>
+<span class="absolute top-2 right-4 w-2 h-2 bg-error rounded-full"></span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16 h-12 hover:text-primary transition-transform active:scale-90" href="#">
+<img alt="Profile" class="w-6 h-6 rounded-full object-cover border border-outline-variant" data-alt="A small circular avatar of a professional user with a neutral, friendly expression. The lighting is crisp and the background is a clean, dark aesthetic consistent with a premium obsidian-themed mobile application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZqHguuwB-b-RpKowEUE4b10Vg68gG0DeBw8wNM2IaAK6-PyZAvqouGiPKGIWr14U3RBeqzL2LXcq-YEOLaNU7T18D2Sb2t2-R6OxVekW3EJM_LV31VXU-bJy0QFcBwh_kOn5u6roqhFAJszmgfogplGKU76YB7a3S8wZeu6HEwxy2F3iKxZSfgjgv4ufnUj0QCZyW8hkjRrOB9cmh-PAoldiHfd_runDUW4Ve_Nw53FZh-0TazPsjIXb2E-riP6cA8OgoNebluFA"/>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</footer>
+<script>
+        // Micro-interactions for list items
+        document.querySelectorAll('section > div').forEach(item => {
+            item.addEventListener('mousedown', () => {
+                item.classList.add('scale-[0.98]');
+                item.classList.add('bg-surface-variant/30');
+            });
+            item.addEventListener('mouseup', () => {
+                item.classList.remove('scale-[0.98]');
+                item.classList.remove('bg-surface-variant/30');
+            });
+            item.addEventListener('mouseleave', () => {
+                item.classList.remove('scale-[0.98]');
+                item.classList.remove('bg-surface-variant/30');
+            });
+        });
+
+        // Tab switching logic (visual only)
+        const tabs = document.querySelectorAll('nav button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    t.classList.remove('text-primary', 'border-b-2', 'border-primary');
+                    t.classList.add('text-on-surface-variant');
+                });
+                tab.classList.add('text-primary', 'border-b-2', 'border-primary');
+                tab.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+</body></html>
