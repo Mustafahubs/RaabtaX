@@ -1,7 +1,8 @@
+import secrets
+
 import flet as ft
 import asyncpg
 import bcrypt
-import pyotp
 
 import database
 from theme import Colors, Radius, Spacing, FontSize, FontWeight
@@ -316,13 +317,12 @@ class RegisterView:
 
         self._clear_errors()
 
-        # ── Hashing & secret generation ─────────────────────────────── #
-        pw_hash     = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        totp_secret = pyotp.random_base32()
+        # ── Hash password ────────────────────────────────────────────── #
+        pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
         # ── Persist to Postgres ─────────────────────────────────────── #
         try:
-            user_id = await database.create_user(name, email, phone, pw_hash, totp_secret)
+            user_id = await database.create_user(name, email, phone, pw_hash)
         except asyncpg.UniqueViolationError:
             self._email_field.error = "Email or phone is already registered"
             self._email_field.update()
@@ -333,9 +333,14 @@ class RegisterView:
             )
             return
 
+        # ── Generate & dispatch email OTP ────────────────────────────── #
+        otp_code = f"{secrets.randbelow(1_000_000):06d}"
+        database.send_verification_email(email, otp_code)
+        await database.store_email_otp(user_id, otp_code)
+
         # ── Hand off context to verify view via session store ────────── #
-        self._page.session.store.set("pending_user_id",    str(user_id))
-        self._page.session.store.set("pending_totp_secret", totp_secret)
+        self._page.session.store.set("pending_user_id", str(user_id))
+        self._page.session.store.set("pending_email",   email)
 
         self._page.navigate("/verify")
 

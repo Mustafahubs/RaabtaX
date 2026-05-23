@@ -1,3 +1,5 @@
+import secrets
+
 import flet as ft
 import bcrypt
 
@@ -318,10 +320,13 @@ class LoginView:
             self._password_field.update()
             return
 
-        # ── Unverified account — route to verify ─────────────────────── #
+        # ── Unverified account — send a fresh OTP and route to verify ── #
         if not user["is_verified"]:
-            self._page.session.store.set("pending_user_id",     str(user["id"]))
-            self._page.session.store.set("pending_totp_secret", user["totp_secret"])
+            otp_code = f"{secrets.randbelow(1_000_000):06d}"
+            database.send_verification_email(user["email"], otp_code)
+            await database.store_email_otp(user["id"], otp_code)
+            self._page.session.store.set("pending_user_id", str(user["id"]))
+            self._page.session.store.set("pending_email",   user["email"])
             self._page.navigate("/verify")
             return
 

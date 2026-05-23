@@ -1,7 +1,6 @@
 import asyncio
 
 import flet as ft
-import pyotp
 
 import database
 from theme import Colors, Radius, Spacing, FontSize, FontWeight
@@ -15,15 +14,15 @@ class VerifyView:
       ONE invisible ft.TextField is the single source of truth.
       SIX ft.Container boxes are purely visual read-only displays.
 
-    Tapping anywhere on the grid area hits the invisible TextField (opacity=0
+    Tapping anywhere on the grid area hits the invisible overlay (opacity=0
     still absorbs pointer events in Flutter), opens the numeric keyboard, and
     on_change fans each digit to the corresponding visual box.
 
     Auto-submit fires when the hidden field reaches exactly 6 digits.
     Clipboard paste drops the whole code in at once via ft.Clipboard().get().
 
-    No "Resend" button — TOTP codes regenerate automatically in Google
-    Authenticator every 30 seconds. There is nothing to resend.
+    Verification compares the entered code against the Redis email_otp key
+    stored during registration or login (15-minute TTL).
     """
 
     def __init__(self, page: ft.Page) -> None:
@@ -99,6 +98,9 @@ class VerifyView:
         if len(raw) == _BOX_COUNT and not self._verifying:
             await self._submit(raw)
 
+    async def _on_grid_tap(self, e: ft.ControlEvent) -> None:
+        self._hidden.focus()
+
     async def _on_paste(self, e: ft.ControlEvent) -> None:
         try:
             text = await ft.Clipboard().get() or ""
@@ -134,24 +136,18 @@ class VerifyView:
             self._page.navigate("/register")
             return
 
-        try:
-            user = await database.get_user_by_id(int(pending_id))
-        except Exception as exc:
+        stored_code = await database.get_email_otp(int(pending_id))
+        if stored_code is None:
             self._page.show_dialog(
-                ft.SnackBar(ft.Text(f"DB error: {exc}"))
+                ft.SnackBar(ft.Text("Code expired — log in again to receive a new one."))
             )
             self._verifying = False
             return
 
-        if user is None:
-            self._page.navigate("/register")
-            return
-
-        totp = pyotp.TOTP(user["totp_secret"])
-        if not totp.verify(raw, valid_window=1):
+        if raw != stored_code:
             self._error_boxes()
             self._page.show_dialog(
-                ft.SnackBar(ft.Text("Invalid code — check your Authenticator app."))
+                ft.SnackBar(ft.Text("Incorrect code — check your email and try again."))
             )
             await asyncio.sleep(0.6)
             self._hidden.value = ""
@@ -161,6 +157,7 @@ class VerifyView:
             return
 
         try:
+            await database.delete_email_otp(int(pending_id))
             await database.mark_verified(int(pending_id))
             token = await database.create_session(int(pending_id))
         except Exception as exc:
@@ -173,18 +170,23 @@ class VerifyView:
         self._page.session.store.set("user_id", pending_id)
         self._page.session.store.set("session_token", token)
         self._page.session.store.remove("pending_user_id")
-        self._page.session.store.remove("pending_totp_secret")
+        self._page.session.store.remove("pending_email")
 
         self._page.navigate("/hub")
 
     # ── Section builders ──────────────────────────────────────────────── #
 
     def _build_header(self) -> ft.Column:
-        totp_secret = self._page.session.store.get("pending_totp_secret") or ""
+        email = self._page.session.store.get("pending_email") or ""
+        subtitle = (
+            f"We sent a 6-digit code to {email}. Enter it below to verify your account."
+            if email else
+            "Enter the 6-digit code we sent to your email address."
+        )
         return ft.Column(
             controls=[
                 ft.Container(
-                    content=ft.Icon(ft.Icons.VERIFIED_USER,
+                    content=ft.Icon(ft.Icons.MARK_EMAIL_READ,
                                     color=Colors.ON_PRIMARY_CONTAINER, size=26),
                     width=52, height=52,
                     bgcolor=Colors.PRIMARY_CONTAINER,
@@ -192,55 +194,19 @@ class VerifyView:
                     alignment=ft.Alignment.CENTER,
                 ),
                 ft.Container(height=20),
-                ft.Text("Verify Your Account",
+                ft.Text("Verify Your Email",
                         size=FontSize.HEADLINE_MOBILE,
                         weight=FontWeight.BOLD,
                         color=Colors.ON_SURFACE),
                 ft.Container(height=8),
                 ft.Text(
-                    "Open Google Authenticator and enter the 6-digit code "
-                    "for this account.",
+                    subtitle,
                     size=FontSize.BODY_MD,
                     color=Colors.ON_SURFACE_VARIANT,
                     max_lines=3,
                 ),
-                ft.Container(height=16),
-                self._build_secret_card(totp_secret),
             ],
             spacing=0,
-        )
-
-    def _build_secret_card(self, secret: str) -> ft.Container:
-        if not secret:
-            return ft.Container(height=0)
-
-        grouped = " ".join(secret[i:i+4] for i in range(0, len(secret), 4))
-        return ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.Row(
-                        controls=[
-                            ft.Icon(ft.Icons.LOCK, color=Colors.PRIMARY, size=14),
-                            ft.Text("Add this key to Google Authenticator",
-                                    size=FontSize.LABEL_LG,
-                                    color=Colors.ON_SURFACE_VARIANT,
-                                    weight=FontWeight.MEDIUM),
-                        ],
-                        spacing=6,
-                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                    ),
-                    ft.Container(height=6),
-                    ft.Text(grouped, size=FontSize.BODY_MD,
-                            weight=FontWeight.BOLD,
-                            color=Colors.PRIMARY,
-                            selectable=True),
-                ],
-                spacing=0,
-            ),
-            padding=ft.Padding.all(14),
-            bgcolor=Colors.SURFACE_CONTAINER,
-            border=ft.Border.all(1, Colors.OUTLINE_VARIANT),
-            border_radius=Radius.DEFAULT,
         )
 
     def _build_otp_grid(self) -> ft.Column:
@@ -257,6 +223,7 @@ class VerifyView:
             top=0,
             right=0,
             bottom=0,
+            on_click=self._on_grid_tap,
         )
 
         otp_stack = ft.Stack(

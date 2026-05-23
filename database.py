@@ -15,7 +15,9 @@ Override via environment variables:
 import json
 import os
 import secrets
+import smtplib
 from datetime import datetime
+from email.mime.text import MIMEText
 
 import asyncpg
 import redis.asyncio as aioredis
@@ -28,11 +30,12 @@ load_dotenv()
 _pg: asyncpg.Pool | None = None
 _rd: aioredis.Redis | None = None
 
-PG_DSN    = os.environ.get("RAABTAX_PG_DSN",    "postgresql://postgres:postgres@localhost:5432/raabtax")
+PG_DSN    = os.environ.get("RAABTAX_PG_DSN",    "postgresql://postgres:postgres@localhost:5433/raabtax")
 REDIS_URL = os.environ.get("RAABTAX_REDIS_URL", "redis://localhost:6379")
 
 SESSION_TTL  = 86_400   # 24 h
 PRESENCE_TTL = 300      # 5 min
+OTP_TTL      = 900      # 15 min
 
 
 # ── Lifecycle ────────────────────────────────────────────────────────────── #
@@ -79,7 +82,7 @@ async def _apply_schema() -> None:
                 email         TEXT        NOT NULL UNIQUE,
                 phone         TEXT        NOT NULL UNIQUE,
                 password_hash TEXT        NOT NULL,
-                totp_secret   TEXT        NOT NULL,
+                totp_secret   TEXT,
                 is_verified   BOOLEAN     NOT NULL DEFAULT FALSE,
                 created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
@@ -106,6 +109,14 @@ async def _apply_schema() -> None:
                 ON messages (channel_id, timestamp ASC);
         """)
 
+        # Migration: drop NOT NULL on totp_secret for existing tables
+        try:
+            await conn.execute(
+                "ALTER TABLE users ALTER COLUMN totp_secret DROP NOT NULL"
+            )
+        except Exception:
+            pass  # already nullable or column doesn't exist
+
 
 # ── User operations ──────────────────────────────────────────────────────── #
 
@@ -114,7 +125,7 @@ async def create_user(
     email: str,
     phone: str,
     password_hash: str,
-    totp_secret: str,
+    totp_secret: str | None = None,
 ) -> int:
     async with _pg.acquire() as conn:
         row = await conn.fetchrow(
@@ -143,6 +154,58 @@ async def mark_verified(user_id: int) -> None:
         await conn.execute(
             "UPDATE users SET is_verified = TRUE WHERE id = $1", user_id
         )
+
+
+# ── Email OTP operations (Redis) ─────────────────────────────────────────── #
+
+async def store_email_otp(user_id: int, code: str) -> None:
+    try:
+        await _rd.setex(f"email_otp:{user_id}", OTP_TTL, code)
+    except Exception:
+        pass
+
+
+async def get_email_otp(user_id: int) -> str | None:
+    try:
+        return await _rd.get(f"email_otp:{user_id}")
+    except Exception:
+        return None
+
+
+async def delete_email_otp(user_id: int) -> None:
+    try:
+        await _rd.delete(f"email_otp:{user_id}")
+    except Exception:
+        pass
+
+
+def send_verification_email(email: str, code: str) -> None:
+    """
+    Print the verification code to the terminal (always) and attempt delivery
+    via a local SMTP debug server (python -m smtpd -n -c DebuggingServer localhost:1025).
+    """
+    print(
+        f"\n{'=' * 52}\n"
+        f"  RaabtaX — Email Verification\n"
+        f"  To:      {email}\n"
+        f"  Code:    {code}\n"
+        f"  Expires: 15 minutes\n"
+        f"{'=' * 52}\n"
+    )
+    try:
+        msg = MIMEText(
+            f"Your RaabtaX verification code is:\n\n"
+            f"    {code}\n\n"
+            f"This code expires in 15 minutes.\n"
+            f"If you did not create a RaabtaX account, ignore this message."
+        )
+        msg["Subject"] = "RaabtaX — Your verification code"
+        msg["From"] = "noreply@raabtax.local"
+        msg["To"] = email
+        with smtplib.SMTP("localhost", 1025, timeout=2) as smtp:
+            smtp.send_message(msg)
+    except Exception:
+        pass  # local SMTP debug server not running — terminal output is the fallback
 
 
 # ── Channel operations ───────────────────────────────────────────────────── #
