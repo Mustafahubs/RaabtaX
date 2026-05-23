@@ -1,5 +1,6 @@
 import asyncio
 import json
+import random
 from datetime import datetime
 
 import flet as ft
@@ -475,28 +476,58 @@ class ChatHubView:
 
     async def _listen_channel(self, channel_id: int) -> None:
         """
-        Persistent Redis pub/sub loop. Runs until cancelled on channel switch
-        or sign-out. Each inbound message goes through _append_message —
-        no full list rebuild occurs.
+        Persistent Redis pub/sub loop with exponential-backoff reconnection.
+
+        Normal teardown path (channel switch, sign-out):
+          _start_listener / _on_sign_out cancel the task → asyncio.CancelledError
+          is a BaseException, so `except Exception` never catches it — the loop
+          exits immediately and the finally block closes the pubsub socket.
+
+        Network dropout path (Wi-Fi → cellular, momentary packet loss):
+          Any other exception (ConnectionError, OSError, TimeoutError, …) is
+          treated as transient. The dead pubsub object is closed, the task
+          sleeps for `delay` seconds (with ±20 % jitter to prevent thundering
+          herd when many clients reconnect simultaneously), then doubles `delay`
+          up to a 30-second ceiling before retrying.
+
+        Stale-listener guard:
+          Before every retry, `self._active_channel_id != channel_id` is checked.
+          If the user switched channels during the backoff window this task is
+          obsolete — it dissolves without reconnecting so it doesn't compete with
+          the new listener.
         """
-        pubsub = database.get_pubsub()
-        try:
-            await pubsub.subscribe(f"ch:{channel_id}")
-            async for msg in pubsub.listen():
-                if msg["type"] != "message":
-                    continue
-                try:
-                    data = json.loads(msg["data"])
-                except (json.JSONDecodeError, TypeError):
-                    continue
-                self._append_message(data)
-                self._message_list.update()
-        except asyncio.CancelledError:
-            pass
-        except Exception:
-            pass
-        finally:
-            await pubsub.aclose()
+        delay = 2.0
+        max_delay = 30.0
+
+        while True:
+            pubsub = database.get_pubsub()
+            try:
+                await pubsub.subscribe(f"ch:{channel_id}")
+                delay = 2.0  # successful connect — reset backoff
+                async for msg in pubsub.listen():
+                    if msg["type"] != "message":
+                        continue
+                    try:
+                        data = json.loads(msg["data"])
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+                    self._append_message(data)
+                    self._message_list.update()
+            except asyncio.CancelledError:
+                break  # intentional teardown — exit without retry
+            except Exception:
+                # Transient failure — fall through to backoff logic below
+                pass
+            finally:
+                await pubsub.aclose()
+
+            # Stale-listener guard: dissolve if the active channel moved on
+            if self._active_channel_id != channel_id:
+                break
+
+            jitter = random.uniform(0, delay * 0.2)
+            await asyncio.sleep(delay + jitter)
+            delay = min(delay * 2, max_delay)
 
     async def _presence_loop(self, user_id: int) -> None:
         while True:
