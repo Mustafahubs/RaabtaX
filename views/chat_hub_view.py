@@ -35,6 +35,9 @@ _DMS = [
      "color": Colors.SURFACE_CONTAINER_HIGH, "online": False},
 ]
 
+# Consecutive messages within this many seconds from the same sender are grouped
+_GROUP_WINDOW = 300
+
 
 def _fmt_time(ts) -> str:
     if ts is None:
@@ -43,6 +46,17 @@ def _fmt_time(ts) -> str:
         ts = datetime.fromisoformat(ts)
     h = ts.hour % 12 or 12
     return f"{h}:{ts.minute:02d} {'AM' if ts.hour < 12 else 'PM'}"
+
+
+def _parse_ts(ts) -> datetime | None:
+    if ts is None:
+        return None
+    if isinstance(ts, datetime):
+        return ts
+    try:
+        return datetime.fromisoformat(ts)
+    except (ValueError, TypeError):
+        return None
 
 
 def _initials(full_name: str) -> str:
@@ -59,7 +73,7 @@ class ChatHubView:
         self._active_channel_id: int | None = None
         self._listener_task: asyncio.Future | None = None
 
-        # ── Mutable widgets updated in-place on switch ───────────────── #
+        # ── Mutable widgets updated in-place ─────────────────────────── #
         self._channel_title = ft.Text(
             "# general",
             size=FontSize.TITLE_LG,
@@ -75,6 +89,20 @@ class ChatHubView:
             color=Colors.ON_SURFACE,
             cursor_color=Colors.PRIMARY,
             expand=True,
+        )
+
+        # ── Profile header widgets — hydrated in _initialize() ───────── #
+        self._profile_name_text = ft.Text(
+            "...",
+            size=FontSize.HEADLINE_MOBILE,
+            weight=FontWeight.BOLD,
+            color=Colors.PRIMARY,
+        )
+        self._profile_initials_text = ft.Text(
+            "?",
+            size=FontSize.LABEL_LG,
+            weight=FontWeight.BOLD,
+            color=Colors.ON_PRIMARY_CONTAINER,
         )
 
         # ── Drawer channels column — populated by _initialize() ──────── #
@@ -126,13 +154,13 @@ class ChatHubView:
     #  Message rendering                                                   #
     # ------------------------------------------------------------------ #
 
-    def _bubble(self, text: str, top_left_radius: int = 0) -> ft.Container:
+    def _bubble(self, text: str) -> ft.Container:
         return ft.Container(
             content=ft.Text(text, size=FontSize.BODY_MD, color=Colors.ON_SURFACE),
             padding=ft.Padding.all(12),
             bgcolor=Colors.SURFACE_CONTAINER_HIGH,
             border_radius=ft.BorderRadius(
-                top_left=top_left_radius,
+                top_left=0,
                 top_right=Radius.DEFAULT,
                 bottom_left=Radius.DEFAULT,
                 bottom_right=Radius.DEFAULT,
@@ -184,19 +212,25 @@ class ChatHubView:
             width=280,
         )
 
-    def _message_row_from_data(self, data: dict) -> ft.Control:
-        sender_id   = data.get("sender_id", 0)
-        full_name   = data.get("sender_full_name", "Unknown")
-        avatar_bg   = _AVATAR_COLORS[sender_id % len(_AVATAR_COLORS)]
-        author_col  = _AUTHOR_COLORS[sender_id % len(_AUTHOR_COLORS)]
-        time_str    = _fmt_time(data.get("timestamp"))
-        preview     = data.get("link_preview_payload")
+    def _full_message_row(self, data: dict) -> ft.Container:
+        """
+        Full row: circular avatar + author name + timestamp + bubble(s).
+        Rendered for the first message of every new sender group.
+        Carries .data = {sender_id, timestamp} so the next call to
+        _append_message can decide whether to group.
+        """
+        sender_id  = data.get("sender_id", 0)
+        full_name  = data.get("sender_full_name", "Unknown")
+        avatar_bg  = _AVATAR_COLORS[sender_id % len(_AVATAR_COLORS)]
+        author_col = _AUTHOR_COLORS[sender_id % len(_AUTHOR_COLORS)]
+        time_str   = _fmt_time(data.get("timestamp"))
+        preview    = data.get("link_preview_payload")
 
-        bubble_col: list[ft.Control] = [self._bubble(data.get("text_content", ""))]
+        bubbles: list[ft.Control] = [self._bubble(data.get("text_content", ""))]
         if isinstance(preview, dict):
-            bubble_col += [ft.Container(height=6), self._link_preview_from_data(preview)]
+            bubbles += [ft.Container(height=6), self._link_preview_from_data(preview)]
 
-        return ft.Row(
+        row = ft.Row(
             controls=[
                 ft.Column(
                     controls=[self._avatar(_initials(full_name), avatar_bg)],
@@ -215,25 +249,103 @@ class ChatHubView:
                             spacing=8,
                             vertical_alignment=ft.CrossAxisAlignment.BASELINE,
                         ),
-                        *bubble_col,
+                        *bubbles,
                     ],
                     spacing=4,
+                    expand=True,
                 ),
             ],
             spacing=0,
             vertical_alignment=ft.CrossAxisAlignment.START,
+        )
+        return ft.Container(
+            content=row,
+            # 20 px top gap opens a clear visual break between sender groups
+            padding=ft.Padding(top=20, bottom=0, left=16, right=16),
+            data={"sender_id": sender_id, "timestamp": _parse_ts(data.get("timestamp"))},
+        )
+
+    def _compact_message_row(self, data: dict) -> ft.Container:
+        """
+        Compact row: no avatar, no header — just the bubble(s) indented to
+        align with the content column of the preceding full row.
+        Avatar width (40) + gap (12) = 52 px left spacer.
+        4 px top gap keeps the group tight without merging visually.
+        """
+        sender_id = data.get("sender_id", 0)
+        preview   = data.get("link_preview_payload")
+
+        bubbles: list[ft.Control] = [self._bubble(data.get("text_content", ""))]
+        if isinstance(preview, dict):
+            bubbles += [ft.Container(height=6), self._link_preview_from_data(preview)]
+
+        row = ft.Row(
+            controls=[
+                ft.Container(width=52),  # mirrors avatar (40) + gap (12)
+                ft.Column(controls=bubbles, spacing=4, expand=True),
+            ],
+            spacing=0,
+            vertical_alignment=ft.CrossAxisAlignment.START,
+        )
+        return ft.Container(
+            content=row,
+            padding=ft.Padding(top=4, bottom=0, left=16, right=16),
+            data={"sender_id": sender_id, "timestamp": _parse_ts(data.get("timestamp"))},
+        )
+
+    def _append_message(self, data: dict) -> None:
+        """
+        Core append routine used by _load_messages, _listen_channel, and _on_send.
+
+        Grouping algorithm (O(1)):
+          1. Peek at controls[-1].data — a dict with sender_id + timestamp.
+          2. If same sender_id AND delta < _GROUP_WINDOW seconds → compact row.
+          3. Otherwise → full row.
+
+        Also strips the 'no messages' placeholder on the first real message.
+        Separators (ft.Row, data=None) intentionally break grouping because
+        isinstance(None, dict) is False.
+        """
+        controls = self._message_list.controls
+
+        # Remove placeholder — identified as a Container whose .data is not a sender dict
+        if (controls
+                and isinstance(controls[-1], ft.Container)
+                and not isinstance(controls[-1].data, dict)):
+            controls.clear()
+
+        new_sid = data.get("sender_id", 0)
+        new_ts  = _parse_ts(data.get("timestamp"))
+
+        grouped = False
+        if controls:
+            last_data = getattr(controls[-1], "data", None)
+            if isinstance(last_data, dict):
+                last_sid = last_data.get("sender_id")
+                last_ts  = last_data.get("timestamp")
+                if last_sid == new_sid and last_ts and new_ts:
+                    grouped = abs((new_ts - last_ts).total_seconds()) < _GROUP_WINDOW
+
+        controls.append(
+            self._compact_message_row(data) if grouped else self._full_message_row(data)
         )
 
     def _separator(self, label: str) -> ft.Row:
         line = lambda: ft.Container(height=1, bgcolor=Colors.OUTLINE_VARIANT,
                                     expand=True, opacity=0.25)
         return ft.Row(
-            controls=[line(), ft.Text(label, size=FontSize.LABEL_SM, color=Colors.OUTLINE), line()],
+            controls=[
+                line(),
+                ft.Text(label, size=FontSize.LABEL_SM, color=Colors.OUTLINE),
+                line(),
+            ],
             spacing=12,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            # data intentionally absent — grouping never fires after a separator
         )
 
     def _empty_placeholder(self, label: str) -> ft.Container:
+        # No data= key → .data is None → identified as placeholder by _append_message
         return ft.Container(
             content=ft.Text(label, size=FontSize.BODY_MD,
                             color=Colors.ON_SURFACE_VARIANT,
@@ -245,8 +357,8 @@ class ChatHubView:
     def _build_message_list(self) -> ft.ListView:
         return ft.ListView(
             controls=[self._empty_placeholder("Loading messages...")],
-            spacing=20,
-            padding=ft.Padding(left=16, right=16, top=16, bottom=88),
+            spacing=0,   # all spacing is controlled per-row via Container.padding
+            padding=ft.Padding(left=0, right=0, top=16, bottom=88),
             expand=True,
         )
 
@@ -257,20 +369,39 @@ class ChatHubView:
     async def _initialize(self) -> None:
         """
         Runs once after build() via page.run_task().
-        1. Set Redis presence key for the current user.
-        2. Fetch channels from Postgres; seed defaults if empty.
-        3. Populate the drawer channel list.
-        4. Load the first channel's messages.
-        5. Start the Redis pub/sub listener for live delivery.
-        6. Start the presence refresh heartbeat.
+
+        1. Auth-guards /hub — bounces unauthenticated requests to /login.
+        2. Hydrates the profile header with the real user's name.
+        3. Sets presence in Redis.
+        4. Fetches channels; seeds defaults if empty.
+        5. Loads the first channel's messages.
+        6. Starts the Redis pub/sub listener.
+        7. Starts the presence heartbeat.
         """
+        # ── Auth guard ───────────────────────────────────────────────── #
+        user_id_str = self._page.session.store.get("user_id")
+        if not user_id_str:
+            self._page.navigate("/login")
+            return
+        user_id = int(user_id_str)
+
+        # ── Hydrate profile header ───────────────────────────────────── #
+        try:
+            user = await database.get_user_by_id(user_id)
+            if user:
+                name = user["full_name"]
+                self._profile_name_text.value    = name
+                self._profile_initials_text.value = _initials(name)
+                self._profile_name_text.update()
+                self._profile_initials_text.update()
+        except Exception:
+            pass
+
         # ── Presence ────────────────────────────────────────────────── #
-        user_id = self._page.session.store.get("user_id")
-        if user_id:
-            try:
-                await database.set_presence(int(user_id))
-            except Exception:
-                pass
+        try:
+            await database.set_presence(user_id)
+        except Exception:
+            pass
 
         # ── Channels ─────────────────────────────────────────────────── #
         try:
@@ -284,12 +415,11 @@ class ChatHubView:
         if channels:
             self._active_channel    = channels[0]["name"]
             self._active_channel_id = channels[0]["id"]
-            self._channel_title.value     = f"# {self._active_channel}"
-            self._input_field.hint_text   = f"Message # {self._active_channel}"
+            self._channel_title.value   = f"# {self._active_channel}"
+            self._input_field.hint_text = f"Message # {self._active_channel}"
             self._channel_title.update()
             self._input_field.update()
 
-        # ── Populate drawer channel column ───────────────────────────── #
         self._channels_col.controls = [
             self._section_label("TEXT CHANNELS"),
             *[
@@ -305,11 +435,14 @@ class ChatHubView:
             self._start_listener(self._active_channel_id)
 
         # ── Presence heartbeat ───────────────────────────────────────── #
-        if user_id:
-            self._page.run_task(self._presence_loop, int(user_id))
+        self._page.run_task(self._presence_loop, user_id)
 
     async def _load_messages(self, channel_id: int) -> None:
-        """Clear the ListView and populate it with the last 50 DB messages."""
+        """
+        Replace the ListView contents with the last 50 messages from Postgres.
+        Date separators are injected at day boundaries.
+        Each message is routed through _append_message for grouping.
+        """
         try:
             rows = await database.get_messages(channel_id, limit=50)
         except Exception:
@@ -322,34 +455,29 @@ class ChatHubView:
                 self._empty_placeholder("No messages yet — be the first to say something.")
             )
         else:
-            prev_sender: int | None = None
+            prev_date: str | None = None
             for row in rows:
-                # Date separator at day boundaries
-                if prev_sender is None:
-                    ts = row.get("timestamp")
-                    if ts:
-                        label = (ts.strftime("%-d %B %Y")
-                                 if hasattr(ts, "strftime") else ts[:10])
-                        self._message_list.controls.append(self._separator(label))
-
-                self._message_list.controls.append(self._message_row_from_data(row))
-                prev_sender = row.get("sender_id")
+                ts = row.get("timestamp")
+                if ts:
+                    date_label = (ts.strftime("%d %B %Y")
+                                  if hasattr(ts, "strftime") else str(ts)[:10])
+                    if date_label != prev_date:
+                        self._message_list.controls.append(self._separator(date_label))
+                        prev_date = date_label
+                self._append_message(row)
 
         self._message_list.update()
 
     def _start_listener(self, channel_id: int) -> None:
-        """Cancel the previous Redis listener and start one for channel_id."""
         if self._listener_task is not None:
             self._listener_task.cancel()
         self._listener_task = self._page.run_task(self._listen_channel, channel_id)
 
     async def _listen_channel(self, channel_id: int) -> None:
         """
-        Persistent Redis pub/sub loop for live message delivery.
-
-        Runs until cancelled (on channel switch or view teardown).
-        Each inbound message appends exactly one Control node to
-        _message_list — no full list rebuild occurs.
+        Persistent Redis pub/sub loop. Runs until cancelled on channel switch
+        or sign-out. Each inbound message goes through _append_message —
+        no full list rebuild occurs.
         """
         pubsub = database.get_pubsub()
         try:
@@ -361,27 +489,16 @@ class ChatHubView:
                     data = json.loads(msg["data"])
                 except (json.JSONDecodeError, TypeError):
                     continue
-
-                # Remove "no messages" placeholder on first live message
-                if (
-                    len(self._message_list.controls) == 1
-                    and isinstance(self._message_list.controls[0], ft.Container)
-                ):
-                    self._message_list.controls.clear()
-
-                self._message_list.controls.append(self._message_row_from_data(data))
+                self._append_message(data)
                 self._message_list.update()
         except asyncio.CancelledError:
             pass
         except Exception:
-            # Redis unavailable or misconfigured — chat hub still works,
-            # new messages just won't be delivered live until Redis is fixed.
             pass
         finally:
             await pubsub.aclose()
 
     async def _presence_loop(self, user_id: int) -> None:
-        """Refresh the presence key every 4 minutes (TTL is 5 min)."""
         while True:
             try:
                 await asyncio.sleep(240)
@@ -477,23 +594,18 @@ class ChatHubView:
         )
 
     def _channel_row_db(self, channel_id: int, name: str, active: bool) -> ft.Container:
-        """Channel row wired to a DB channel_id; on-click triggers live data swap."""
         async def _tap(e: ft.ControlEvent) -> None:
             if self._active_channel_id == channel_id:
                 await self._view.close_drawer()
                 return
 
-            # ── State update ──────────────────────────────────────────── #
             self._active_channel    = name
             self._active_channel_id = channel_id
-
-            # ── In-place widget mutations (O(1), no list rebuild) ──────── #
             self._channel_title.value   = f"# {name}"
             self._input_field.hint_text = f"Message # {name}"
             self._channel_title.update()
             self._input_field.update()
 
-            # ── Swap listener before closing drawer ───────────────────── #
             await self._load_messages(channel_id)
             self._start_listener(channel_id)
             await self._view.close_drawer()
@@ -533,6 +645,7 @@ class ChatHubView:
             ],
             width=32, height=32,
         )
+
         async def _tap(e: ft.ControlEvent) -> None:
             await self._view.close_drawer()
             self._page.navigate("/dm")
@@ -567,13 +680,10 @@ class ChatHubView:
         )
 
     def _build_drawer(self) -> ft.NavigationDrawer:
-        # ── Profile header ───────────────────────────────────────────── #
         profile_avatar = ft.Stack(
             controls=[
                 ft.Container(
-                    content=ft.Text("AC", size=FontSize.LABEL_LG,
-                                    weight=FontWeight.BOLD,
-                                    color=Colors.ON_PRIMARY_CONTAINER),
+                    content=self._profile_initials_text,
                     width=48, height=48, border_radius=24,
                     bgcolor=Colors.PRIMARY_CONTAINER, alignment=ft.Alignment.CENTER,
                 ),
@@ -593,8 +703,7 @@ class ChatHubView:
                     profile_avatar,
                     ft.Column(
                         controls=[
-                            ft.Text("Alex Chen", size=FontSize.HEADLINE_MOBILE,
-                                    weight=FontWeight.BOLD, color=Colors.PRIMARY),
+                            self._profile_name_text,
                             ft.Text("Online", size=FontSize.BODY_MD,
                                     color=Colors.ON_SURFACE_VARIANT),
                         ],
@@ -632,15 +741,30 @@ class ChatHubView:
             ink=True,
         )
 
+        sign_out_row = ft.Container(
+            content=ft.Row(
+                controls=[
+                    ft.Icon(ft.Icons.LOGOUT, color=Colors.ERROR, size=20),
+                    ft.Text("Sign Out", size=FontSize.BODY_MD, color=Colors.ERROR),
+                ],
+                spacing=12,
+            ),
+            padding=ft.Padding.symmetric(horizontal=16, vertical=12),
+            border_radius=Radius.FULL,
+            ink=True,
+            on_click=self._on_sign_out,
+        )
+
         channels_panel = ft.Column(
             controls=[
                 profile_header,
-                self._channels_col,   # ← populated live by _initialize()
+                self._channels_col,
                 ft.Container(height=8),
                 dm_block,
                 ft.Container(height=8),
                 ft.Divider(color=Colors.OUTLINE_VARIANT, height=1, thickness=1),
                 settings_row,
+                sign_out_row,
             ],
             spacing=0,
             expand=True,
@@ -677,9 +801,10 @@ class ChatHubView:
 
         user_id = self._page.session.store.get("user_id")
         if not user_id:
+            self._page.navigate("/login")
             return
 
-        # Clear input immediately for snappy UX
+        # Clear immediately for snappy UX; restore on failure
         self._input_field.value = ""
         self._input_field.update()
 
@@ -689,23 +814,28 @@ class ChatHubView:
                 sender_id=int(user_id),
                 text_content=text,
             )
-            # Remove placeholder if present
-            if (
-                len(self._message_list.controls) == 1
-                and isinstance(self._message_list.controls[0], ft.Container)
-            ):
-                self._message_list.controls.clear()
-
-            # Append our own message (pubsub won't echo back to sender)
-            self._message_list.controls.append(self._message_row_from_data(msg))
+            # Append our own message locally — pub/sub does not echo back to sender
+            self._append_message(msg)
             self._message_list.update()
 
-            # Broadcast to all other connected clients via Redis
+            # Broadcast to every other connected client on this channel
             await database.publish_message(self._active_channel_id, msg)
         except Exception:
-            # Restore text if send failed
             self._input_field.value = text
             self._input_field.update()
+
+    async def _on_sign_out(self, e: ft.ControlEvent) -> None:
+        token = self._page.session.store.get("session_token")
+        if token:
+            await database.delete_session(token)
+
+        self._page.session.store.remove("user_id")
+        self._page.session.store.remove("session_token")
+
+        if self._listener_task is not None:
+            self._listener_task.cancel()
+
+        self._page.navigate("/login")
 
     # ------------------------------------------------------------------ #
     #  Build                                                               #
@@ -744,9 +874,7 @@ class ChatHubView:
             ],
         )
 
-        # Kick off async hydration after view is returned to the router
         self._page.run_task(self._initialize)
-
         return self._view
 
 
