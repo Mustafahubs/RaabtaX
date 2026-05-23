@@ -9,14 +9,18 @@ Defaults target a local dev stack:
   Redis: redis://localhost:6379
 
 Override via environment variables:
-  RAABTAX_PG_DSN    — full asyncpg DSN
-  RAABTAX_REDIS_URL — redis:// URL
+  RAABTAX_PG_DSN       — full asyncpg DSN
+  RAABTAX_REDIS_URL    — redis:// URL
+  RAABTAX_SMTP_USER    — outbound Gmail address
+  RAABTAX_SMTP_PASSWORD — Gmail app password
 """
+import asyncio
 import json
 import os
 import secrets
 import smtplib
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import asyncpg
@@ -32,6 +36,11 @@ _rd: aioredis.Redis | None = None
 
 PG_DSN    = os.environ.get("RAABTAX_PG_DSN",    "postgresql://postgres:postgres@localhost:5433/raabtax")
 REDIS_URL = os.environ.get("RAABTAX_REDIS_URL", "redis://localhost:6379")
+
+SMTP_HOST     = "smtp.gmail.com"
+SMTP_PORT     = 587
+SMTP_USER     = os.environ.get("RAABTAX_SMTP_USER",     "noreply.raabtax@gmail.com")
+SMTP_PASSWORD = os.environ.get("RAABTAX_SMTP_PASSWORD", "")
 
 SESSION_TTL  = 86_400   # 24 h
 PRESENCE_TTL = 300      # 5 min
@@ -179,33 +188,134 @@ async def delete_email_otp(user_id: int) -> None:
         pass
 
 
-def send_verification_email(email: str, code: str) -> None:
+def _build_verification_html(code: str) -> str:
+    spaced = "  ".join(code)  # visual breathing room between digits
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>RaabtaX — Verify Your Account</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0d1117;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0"
+         style="background-color:#0d1117;padding:48px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="max-width:520px;background-color:#161b22;border-radius:16px;
+                      border:1px solid #21262d;overflow:hidden;">
+
+          <!-- ── Header ── -->
+          <tr>
+            <td style="background-color:#1c2333;padding:32px 40px 28px;
+                       text-align:center;border-bottom:1px solid #21262d;">
+              <div style="display:inline-block;background-color:rgba(31,111,235,0.12);
+                          border:1px solid rgba(31,111,235,0.28);border-radius:12px;
+                          padding:10px 18px;margin-bottom:14px;">
+                <span style="font-size:20px;color:#58a6ff;font-weight:700;
+                             letter-spacing:2px;">RX</span>
+              </div>
+              <h1 style="margin:0;font-size:22px;font-weight:700;
+                         color:#e6edf3;letter-spacing:-0.3px;">RaabtaX</h1>
+              <p style="margin:5px 0 0;font-size:11px;color:#6e7681;
+                        letter-spacing:1.8px;text-transform:uppercase;">Secure Messaging</p>
+            </td>
+          </tr>
+
+          <!-- ── Body ── -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <h2 style="margin:0 0 10px;font-size:18px;font-weight:600;
+                         color:#e6edf3;">Verify your account</h2>
+              <p style="margin:0 0 32px;font-size:14px;line-height:1.75;color:#8b949e;">
+                Welcome to RaabtaX. Use the one-time code below to complete your
+                registration. This code is valid for
+                <strong style="color:#c9d1d9;">15&nbsp;minutes</strong>.
+              </p>
+
+              <!-- ── OTP box ── -->
+              <div style="background-color:#0d1117;border:1px solid #30363d;
+                          border-radius:12px;padding:30px 20px 26px;
+                          text-align:center;margin-bottom:32px;">
+                <p style="margin:0 0 10px;font-size:10px;font-weight:600;
+                           color:#6e7681;letter-spacing:2px;
+                           text-transform:uppercase;">Verification Code</p>
+                <span style="font-family:'Courier New',Courier,monospace;
+                             font-size:44px;font-weight:700;color:#58a6ff;
+                             letter-spacing:14px;display:inline-block;
+                             padding-left:14px;">{spaced}</span>
+              </div>
+
+              <!-- ── Disclaimer ── -->
+              <div style="background-color:#161b22;border:1px solid #21262d;
+                          border-left:3px solid #d29922;border-radius:6px;
+                          padding:14px 18px;">
+                <p style="margin:0;font-size:12px;line-height:1.65;color:#8b949e;">
+                  If you did not create a RaabtaX account, you can safely ignore
+                  this email. Never share this code with anyone — our team will
+                  never ask for it.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- ── Footer ── -->
+          <tr>
+            <td style="padding:18px 40px 26px;border-top:1px solid #21262d;
+                       text-align:center;">
+              <p style="margin:0;font-size:11px;color:#484f58;">
+                © 2026 RaabtaX &nbsp;·&nbsp; Secure Messaging Platform
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+
+async def send_verification_email(to_email: str, code: str) -> None:
     """
-    Print the verification code to the terminal (always) and attempt delivery
-    via a local SMTP debug server (python -m smtpd -n -c DebuggingServer localhost:1025).
+    Dispatch an HTML verification email via Gmail SMTP on a thread pool so
+    the blocking network handshake never stalls Flet's async event loop.
+
+    Falls back to a terminal print if delivery fails (SMTP misconfigured,
+    network unavailable, etc.) so development stays unblocked.
     """
-    print(
-        f"\n{'=' * 52}\n"
-        f"  RaabtaX — Email Verification\n"
-        f"  To:      {email}\n"
-        f"  Code:    {code}\n"
-        f"  Expires: 15 minutes\n"
-        f"{'=' * 52}\n"
-    )
-    try:
-        msg = MIMEText(
-            f"Your RaabtaX verification code is:\n\n"
-            f"    {code}\n\n"
-            f"This code expires in 15 minutes.\n"
-            f"If you did not create a RaabtaX account, ignore this message."
-        )
+    def _send() -> None:
+        msg = MIMEMultipart("alternative")
         msg["Subject"] = "RaabtaX — Your verification code"
-        msg["From"] = "noreply@raabtax.local"
-        msg["To"] = email
-        with smtplib.SMTP("localhost", 1025, timeout=2) as smtp:
+        msg["From"]    = f"RaabtaX <{SMTP_USER}>"
+        msg["To"]      = to_email
+
+        plain = (
+            f"Your RaabtaX verification code is: {code}\n\n"
+            f"This code expires in 15 minutes.\n"
+            f"If you did not initiate this, ignore this email."
+        )
+        msg.attach(MIMEText(plain, "plain"))
+        msg.attach(MIMEText(_build_verification_html(code), "html"))
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(SMTP_USER, SMTP_PASSWORD)
             smtp.send_message(msg)
-    except Exception:
-        pass  # local SMTP debug server not running — terminal output is the fallback
+
+    try:
+        await asyncio.to_thread(_send)
+    except Exception as exc:
+        print(
+            f"\n{'=' * 52}\n"
+            f"  [RaabtaX] Email delivery failed: {exc}\n"
+            f"  To:   {to_email}\n"
+            f"  Code: {code}\n"
+            f"{'=' * 52}\n"
+        )
 
 
 # ── Channel operations ───────────────────────────────────────────────────── #

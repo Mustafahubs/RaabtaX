@@ -323,7 +323,7 @@ class LoginView:
         # ── Unverified account — send a fresh OTP and route to verify ── #
         if not user["is_verified"]:
             otp_code = f"{secrets.randbelow(1_000_000):06d}"
-            database.send_verification_email(user["email"], otp_code)
+            await database.send_verification_email(user["email"], otp_code)
             await database.store_email_otp(user["id"], otp_code)
             self._page.session.store.set("pending_user_id", str(user["id"]))
             self._page.session.store.set("pending_email",   user["email"])

@@ -335,7 +335,7 @@ class RegisterView:
 
         # ── Generate & dispatch email OTP ────────────────────────────── #
         otp_code = f"{secrets.randbelow(1_000_000):06d}"
-        database.send_verification_email(email, otp_code)
+        await database.send_verification_email(email, otp_code)
         await database.store_email_otp(user_id, otp_code)
 
         # ── Hand off context to verify view via session store ────────── #
