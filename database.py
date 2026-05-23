@@ -402,6 +402,14 @@ async def publish_message(channel_id: int, msg: dict) -> None:
     await _rd.publish(f"ch:{channel_id}", json.dumps(payload))
 
 
+async def publish_typing(channel_id: int, payload: dict) -> None:
+    """Publish an ephemeral typing signal to the channel's typing sub-channel."""
+    try:
+        await _rd.publish(f"ch:{channel_id}:typing", json.dumps(payload))
+    except Exception:
+        pass
+
+
 def get_pubsub() -> aioredis.client.PubSub:
     """Return a new pub/sub object bound to the shared Redis connection."""
     return _rd.pubsub()

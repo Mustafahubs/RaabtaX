@@ -1,6 +1,7 @@
 import asyncio
 import json
 import random
+import time
 from datetime import datetime
 
 import flet as ft
@@ -27,17 +28,21 @@ _AUTHOR_COLORS = [
     "#ce93d8",
 ]
 
-# ── Placeholder DM data (not yet backed by a DM schema) ─────────────────── #
+# ── Placeholder DM data — user_id drives Redis presence lookup ───────────── #
 
 _DMS = [
     {"name": "Sarah Mitchell", "initials": "SM",
-     "color": Colors.PRIMARY_CONTAINER, "online": True},
+     "color": Colors.PRIMARY_CONTAINER, "user_id": 2},
     {"name": "James Holden",   "initials": "JH",
-     "color": Colors.SURFACE_CONTAINER_HIGH, "online": False},
+     "color": Colors.SURFACE_CONTAINER_HIGH, "user_id": 3},
 ]
 
-# Consecutive messages within this many seconds from the same sender are grouped
-_GROUP_WINDOW = 300
+# Consecutive messages within this window (seconds) from the same sender are grouped
+_GROUP_WINDOW   = 300
+# Typing signal debounce — publish at most once per this many seconds
+_TYPING_DEBOUNCE = 2.0
+# Prune a typing user after this many seconds of silence
+_TYPING_EXPIRY  = 3.5
 
 
 def _fmt_time(ts) -> str:
@@ -72,7 +77,16 @@ class ChatHubView:
         # ── Active channel state ─────────────────────────────────────── #
         self._active_channel: str = "general"
         self._active_channel_id: int | None = None
-        self._listener_task: asyncio.Future | None = None
+
+        # ── Background task handles ──────────────────────────────────── #
+        self._listener_task: asyncio.Future | None = None   # message pub/sub
+        self._typing_task:   asyncio.Future | None = None   # typing pub/sub
+        self._prune_task:    asyncio.Future | None = None   # typing expiry sweep
+
+        # ── Typing state ─────────────────────────────────────────────── #
+        # {user_id: (full_name, last_seen_monotonic)}
+        self._typing_users: dict[int, tuple[str, float]] = {}
+        self._last_typing_sent: float = 0.0  # monotonic clock, not wall time
 
         # ── Mutable widgets updated in-place ─────────────────────────── #
         self._channel_title = ft.Text(
@@ -90,6 +104,13 @@ class ChatHubView:
             color=Colors.ON_SURFACE,
             cursor_color=Colors.PRIMARY,
             expand=True,
+            on_change=self._on_typing,
+        )
+        self._typing_label = ft.Text(
+            "",
+            size=FontSize.LABEL_LG,
+            color=Colors.ON_SURFACE_VARIANT,
+            italic=True,
         )
 
         # ── Profile header widgets — hydrated in _initialize() ───────── #
@@ -105,6 +126,10 @@ class ChatHubView:
             weight=FontWeight.BOLD,
             color=Colors.ON_PRIMARY_CONTAINER,
         )
+
+        # ── DM presence dot references — keyed by user_id ────────────── #
+        # Populated in _dm_row(), updated in _initialize()
+        self._dm_presence_dots: dict[int, ft.Container] = {}
 
         # ── Drawer channels column — populated by _initialize() ──────── #
         self._channels_col = ft.Column(
@@ -217,8 +242,7 @@ class ChatHubView:
         """
         Full row: circular avatar + author name + timestamp + bubble(s).
         Rendered for the first message of every new sender group.
-        Carries .data = {sender_id, timestamp} so the next call to
-        _append_message can decide whether to group.
+        .data carries {sender_id, timestamp} for the O(1) grouping look-behind.
         """
         sender_id  = data.get("sender_id", 0)
         full_name  = data.get("sender_full_name", "Unknown")
@@ -261,17 +285,16 @@ class ChatHubView:
         )
         return ft.Container(
             content=row,
-            # 20 px top gap opens a clear visual break between sender groups
             padding=ft.Padding(top=20, bottom=0, left=16, right=16),
             data={"sender_id": sender_id, "timestamp": _parse_ts(data.get("timestamp"))},
         )
 
     def _compact_message_row(self, data: dict) -> ft.Container:
         """
-        Compact row: no avatar, no header — just the bubble(s) indented to
-        align with the content column of the preceding full row.
-        Avatar width (40) + gap (12) = 52 px left spacer.
-        4 px top gap keeps the group tight without merging visually.
+        Compact row: no avatar, no header — bubble(s) indented to align with the
+        content column of the preceding full row.
+        Avatar (40) + gap (12) = 52 px left spacer. Top-pad 4 px keeps the group
+        visually tight without merging.
         """
         sender_id = data.get("sender_id", 0)
         preview   = data.get("link_preview_payload")
@@ -296,20 +319,19 @@ class ChatHubView:
 
     def _append_message(self, data: dict) -> None:
         """
-        Core append routine used by _load_messages, _listen_channel, and _on_send.
+        Core append routine shared by _load_messages, _listen_channel, _on_send.
 
-        Grouping algorithm (O(1)):
-          1. Peek at controls[-1].data — a dict with sender_id + timestamp.
-          2. If same sender_id AND delta < _GROUP_WINDOW seconds → compact row.
-          3. Otherwise → full row.
+        Grouping (O(1)):
+          Peek controls[-1].data — {sender_id, timestamp}.
+          Same sender_id AND delta < _GROUP_WINDOW seconds → compact row.
+          Otherwise → full row.
+          Separators (ft.Row, no .data dict) naturally break grouping.
 
-        Also strips the 'no messages' placeholder on the first real message.
-        Separators (ft.Row, data=None) intentionally break grouping because
-        isinstance(None, dict) is False.
+        Strips the 'no messages' placeholder on first real message.
         """
         controls = self._message_list.controls
 
-        # Remove placeholder — identified as a Container whose .data is not a sender dict
+        # Strip placeholder — a Container whose .data is not a sender dict
         if (controls
                 and isinstance(controls[-1], ft.Container)
                 and not isinstance(controls[-1].data, dict)):
@@ -342,11 +364,11 @@ class ChatHubView:
             ],
             spacing=12,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            # data intentionally absent — grouping never fires after a separator
+            # no data key — grouping never fires after a separator
         )
 
     def _empty_placeholder(self, label: str) -> ft.Container:
-        # No data= key → .data is None → identified as placeholder by _append_message
+        # No data key → .data is None → identified as placeholder by _append_message
         return ft.Container(
             content=ft.Text(label, size=FontSize.BODY_MD,
                             color=Colors.ON_SURFACE_VARIANT,
@@ -358,10 +380,51 @@ class ChatHubView:
     def _build_message_list(self) -> ft.ListView:
         return ft.ListView(
             controls=[self._empty_placeholder("Loading messages...")],
-            spacing=0,   # all spacing is controlled per-row via Container.padding
+            spacing=0,      # all gaps controlled per-row via Container.padding
             padding=ft.Padding(left=0, right=0, top=16, bottom=88),
             expand=True,
         )
+
+    # ------------------------------------------------------------------ #
+    #  Typing indicator                                                    #
+    # ------------------------------------------------------------------ #
+
+    def _update_typing_label(self) -> None:
+        """Recompute the typing label text from _typing_users and push the update."""
+        if not self._typing_users:
+            text = ""
+        elif len(self._typing_users) == 1:
+            name = next(iter(self._typing_users.values()))[0]
+            first = name.split()[0]
+            text = f"{first} is typing..."
+        else:
+            text = "Multiple people are typing..."
+
+        self._typing_label.value = text
+        self._typing_label.update()
+
+    async def _prune_typing_loop(self) -> None:
+        """
+        Sweep _typing_users every second. Remove any user whose last signal
+        is older than _TYPING_EXPIRY seconds. This is what makes the indicator
+        disappear naturally when someone stops typing without sending.
+        """
+        while True:
+            try:
+                await asyncio.sleep(1.0)
+                now = time.monotonic()
+                stale = [
+                    uid for uid, (_, last_seen) in self._typing_users.items()
+                    if now - last_seen > _TYPING_EXPIRY
+                ]
+                if stale:
+                    for uid in stale:
+                        self._typing_users.pop(uid, None)
+                    self._update_typing_label()
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                pass
 
     # ------------------------------------------------------------------ #
     #  Async initialization & live data pipeline                           #
@@ -371,13 +434,14 @@ class ChatHubView:
         """
         Runs once after build() via page.run_task().
 
-        1. Auth-guards /hub — bounces unauthenticated requests to /login.
-        2. Hydrates the profile header with the real user's name.
-        3. Sets presence in Redis.
+        1. Auth-guards /hub — bounces unauthenticated sessions to /login.
+        2. Hydrates profile header from DB.
+        3. Writes presence to Redis; starts presence heartbeat.
         4. Fetches channels; seeds defaults if empty.
         5. Loads the first channel's messages.
-        6. Starts the Redis pub/sub listener.
-        7. Starts the presence heartbeat.
+        6. Starts message + typing pub/sub listeners.
+        7. Starts typing expiry prune loop.
+        8. Hydrates DM presence dots via Redis get_presence().
         """
         # ── Auth guard ───────────────────────────────────────────────── #
         user_id_str = self._page.session.store.get("user_id")
@@ -386,12 +450,12 @@ class ChatHubView:
             return
         user_id = int(user_id_str)
 
-        # ── Hydrate profile header ───────────────────────────────────── #
+        # ── Profile header ───────────────────────────────────────────── #
         try:
             user = await database.get_user_by_id(user_id)
             if user:
                 name = user["full_name"]
-                self._profile_name_text.value    = name
+                self._profile_name_text.value     = name
                 self._profile_initials_text.value = _initials(name)
                 self._profile_name_text.update()
                 self._profile_initials_text.update()
@@ -430,20 +494,31 @@ class ChatHubView:
         ]
         self._channels_col.update()
 
-        # ── Initial message load ─────────────────────────────────────── #
+        # ── Initial message load + listeners ─────────────────────────── #
         if self._active_channel_id is not None:
             await self._load_messages(self._active_channel_id)
-            self._start_listener(self._active_channel_id)
+            self._start_listeners(self._active_channel_id)
+
+        # ── Typing prune loop (single global task, not per-channel) ──── #
+        self._prune_task = self._page.run_task(self._prune_typing_loop)
 
         # ── Presence heartbeat ───────────────────────────────────────── #
         self._page.run_task(self._presence_loop, user_id)
 
+        # ── Hydrate DM sidebar presence dots ─────────────────────────── #
+        for dm in _DMS:
+            uid = dm.get("user_id")
+            if uid and uid in self._dm_presence_dots:
+                try:
+                    online = await database.get_presence(uid)
+                except Exception:
+                    online = False
+                dot = self._dm_presence_dots[uid]
+                dot.bgcolor = Colors.TERTIARY if online else Colors.OUTLINE_VARIANT
+                dot.update()
+
     async def _load_messages(self, channel_id: int) -> None:
-        """
-        Replace the ListView contents with the last 50 messages from Postgres.
-        Date separators are injected at day boundaries.
-        Each message is routed through _append_message for grouping.
-        """
+        """Replace the ListView with the last 50 DB messages, grouping applied."""
         try:
             rows = await database.get_messages(channel_id, limit=50)
         except Exception:
@@ -469,32 +544,31 @@ class ChatHubView:
 
         self._message_list.update()
 
-    def _start_listener(self, channel_id: int) -> None:
+    def _start_listeners(self, channel_id: int) -> None:
+        """
+        Cancel previous message + typing listeners and start fresh ones for
+        channel_id. Clears typing state so stale indicators don't bleed across
+        channel switches.
+        """
         if self._listener_task is not None:
             self._listener_task.cancel()
+        if self._typing_task is not None:
+            self._typing_task.cancel()
+
+        self._typing_users.clear()
+        self._update_typing_label()
+
         self._listener_task = self._page.run_task(self._listen_channel, channel_id)
+        self._typing_task   = self._page.run_task(self._listen_typing,  channel_id)
 
     async def _listen_channel(self, channel_id: int) -> None:
         """
-        Persistent Redis pub/sub loop with exponential-backoff reconnection.
+        Persistent message pub/sub loop with exponential-backoff reconnection.
 
-        Normal teardown path (channel switch, sign-out):
-          _start_listener / _on_sign_out cancel the task → asyncio.CancelledError
-          is a BaseException, so `except Exception` never catches it — the loop
-          exits immediately and the finally block closes the pubsub socket.
-
-        Network dropout path (Wi-Fi → cellular, momentary packet loss):
-          Any other exception (ConnectionError, OSError, TimeoutError, …) is
-          treated as transient. The dead pubsub object is closed, the task
-          sleeps for `delay` seconds (with ±20 % jitter to prevent thundering
-          herd when many clients reconnect simultaneously), then doubles `delay`
-          up to a 30-second ceiling before retrying.
-
-        Stale-listener guard:
-          Before every retry, `self._active_channel_id != channel_id` is checked.
-          If the user switched channels during the backoff window this task is
-          obsolete — it dissolves without reconnecting so it doesn't compete with
-          the new listener.
+        CancelledError (intentional teardown) → break immediately.
+        All other exceptions (network dropout, socket reset) → backoff retry.
+        Stale-listener guard dissolves the task if the active channel changed
+        during a backoff window.
         """
         delay = 2.0
         max_delay = 30.0
@@ -503,7 +577,7 @@ class ChatHubView:
             pubsub = database.get_pubsub()
             try:
                 await pubsub.subscribe(f"ch:{channel_id}")
-                delay = 2.0  # successful connect — reset backoff
+                delay = 2.0
                 async for msg in pubsub.listen():
                     if msg["type"] != "message":
                         continue
@@ -514,14 +588,67 @@ class ChatHubView:
                     self._append_message(data)
                     self._message_list.update()
             except asyncio.CancelledError:
-                break  # intentional teardown — exit without retry
+                break
             except Exception:
-                # Transient failure — fall through to backoff logic below
                 pass
             finally:
                 await pubsub.aclose()
 
-            # Stale-listener guard: dissolve if the active channel moved on
+            if self._active_channel_id != channel_id:
+                break
+
+            jitter = random.uniform(0, delay * 0.2)
+            await asyncio.sleep(delay + jitter)
+            delay = min(delay * 2, max_delay)
+
+    async def _listen_typing(self, channel_id: int) -> None:
+        """
+        Lightweight pub/sub loop for the ch:{channel_id}:typing Redis channel.
+
+        Incoming payload: {"user_id": int, "full_name": str, "is_typing": true}
+
+        Own signals are filtered out (we already know we're typing).
+        Each valid signal upserts the user into _typing_users with the current
+        monotonic timestamp, then calls _update_typing_label(). The prune loop
+        does the expiry sweep independently.
+
+        Same exponential-backoff + stale-listener pattern as _listen_channel.
+        """
+        delay = 2.0
+        max_delay = 30.0
+        my_uid_str = self._page.session.store.get("user_id")
+
+        while True:
+            pubsub = database.get_pubsub()
+            try:
+                await pubsub.subscribe(f"ch:{channel_id}:typing")
+                delay = 2.0
+                async for msg in pubsub.listen():
+                    if msg["type"] != "message":
+                        continue
+                    try:
+                        data = json.loads(msg["data"])
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+
+                    uid       = data.get("user_id")
+                    full_name = data.get("full_name", "Someone")
+
+                    if not uid or not data.get("is_typing"):
+                        continue
+                    # Don't show our own indicator back to ourselves
+                    if my_uid_str and uid == int(my_uid_str):
+                        continue
+
+                    self._typing_users[uid] = (full_name, time.monotonic())
+                    self._update_typing_label()
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                pass
+            finally:
+                await pubsub.aclose()
+
             if self._active_channel_id != channel_id:
                 break
 
@@ -638,7 +765,7 @@ class ChatHubView:
             self._input_field.update()
 
             await self._load_messages(channel_id)
-            self._start_listener(channel_id)
+            self._start_listeners(channel_id)
             await self._view.close_drawer()
 
         return ft.Container(
@@ -662,17 +789,27 @@ class ChatHubView:
         )
 
     def _dm_row(self, dm: dict) -> ft.Container:
-        dot_color = Colors.TERTIARY if dm["online"] else Colors.OUTLINE_VARIANT
+        """
+        Build a DM row with a mutable presence dot.
+        The dot Container is stored in self._dm_presence_dots[user_id] so
+        _initialize() can update its .bgcolor after the async presence check.
+        Default colour is OUTLINE_VARIANT (offline) — updated live after init.
+        """
+        dot = ft.Container(
+            width=10, height=10,
+            bgcolor=Colors.OUTLINE_VARIANT,   # default offline; updated in _initialize
+            border_radius=5,
+            border=ft.Border.all(2, Colors.SURFACE_CONTAINER),
+            right=0, bottom=0,
+        )
+        uid = dm.get("user_id")
+        if uid:
+            self._dm_presence_dots[uid] = dot
+
         avatar_stack = ft.Stack(
             controls=[
                 self._avatar(dm["initials"], dm["color"], size=32),
-                ft.Container(
-                    width=10, height=10,
-                    bgcolor=dot_color,
-                    border_radius=5,
-                    border=ft.Border.all(2, Colors.SURFACE_CONTAINER),
-                    right=0, bottom=0,
-                ),
+                dot,
             ],
             width=32, height=32,
         )
@@ -825,6 +962,36 @@ class ChatHubView:
     async def _on_burger_tap(self, e: ft.ControlEvent) -> None:
         await self._view.show_drawer()
 
+    async def _on_typing(self, e: ft.ControlEvent) -> None:
+        """
+        Fires on every keystroke in the input field.
+        Debounced to _TYPING_DEBOUNCE seconds using a monotonic clock so we
+        never flood Redis with one pub/sub publish per character.
+        """
+        if not self._input_field.value or self._active_channel_id is None:
+            return
+
+        now = time.monotonic()
+        if now - self._last_typing_sent < _TYPING_DEBOUNCE:
+            return
+        self._last_typing_sent = now
+
+        user_id = self._page.session.store.get("user_id")
+        if not user_id:
+            return
+
+        try:
+            await database.publish_typing(
+                self._active_channel_id,
+                {
+                    "user_id":   int(user_id),
+                    "full_name": self._profile_name_text.value or "Unknown",
+                    "is_typing": True,
+                },
+            )
+        except Exception:
+            pass
+
     async def _on_send(self, e: ft.ControlEvent) -> None:
         text = self._input_field.value.strip()
         if not text or self._active_channel_id is None:
@@ -845,11 +1012,8 @@ class ChatHubView:
                 sender_id=int(user_id),
                 text_content=text,
             )
-            # Append our own message locally — pub/sub does not echo back to sender
             self._append_message(msg)
             self._message_list.update()
-
-            # Broadcast to every other connected client on this channel
             await database.publish_message(self._active_channel_id, msg)
         except Exception:
             self._input_field.value = text
@@ -863,8 +1027,9 @@ class ChatHubView:
         self._page.session.store.remove("user_id")
         self._page.session.store.remove("session_token")
 
-        if self._listener_task is not None:
-            self._listener_task.cancel()
+        for task in (self._listener_task, self._typing_task, self._prune_task):
+            if task is not None:
+                task.cancel()
 
         self._page.navigate("/login")
 
@@ -887,6 +1052,15 @@ class ChatHubView:
             ],
         )
 
+        # Fixed-height typing bar sits between messages and input.
+        # Always rendered (no layout jump) — empty text when nobody is typing.
+        typing_bar = ft.Container(
+            content=self._typing_label,
+            padding=ft.Padding(left=20, right=16, top=4, bottom=0),
+            height=22,
+            bgcolor=Colors.SURFACE_CONTAINER,
+        )
+
         self._view = ft.View(
             route="/hub",
             appbar=appbar,
@@ -897,6 +1071,7 @@ class ChatHubView:
                 ft.Column(
                     controls=[
                         self._message_list,
+                        typing_bar,
                         self._build_input_bar(),
                     ],
                     spacing=0,
