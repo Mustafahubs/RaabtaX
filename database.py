@@ -5,7 +5,7 @@ Connection pools are module-level infrastructure globals.
 Per-user state is NEVER stored here; it belongs in page.session.store.
 
 Defaults target a local dev stack:
-  PG:    postgresql://postgres:postgres@localhost:5432/raabtax
+  PG:    postgresql://postgres:postgres@localhost:5433/raabtax
   Redis: redis://localhost:6379
 
 Override via environment variables:
@@ -19,6 +19,9 @@ from datetime import datetime
 
 import asyncpg
 import redis.asyncio as aioredis
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ── Pool references ──────────────────────────────────────────────────────── #
 
@@ -234,27 +237,48 @@ def get_pubsub() -> aioredis.client.PubSub:
 # ── Session operations (Redis) ───────────────────────────────────────────── #
 
 async def create_session(user_id: int) -> str:
+    """
+    Generate a session token and persist it in Redis.
+    If Redis is unreachable the token is still returned — the caller stores
+    user_id in page.session.store directly, so the session remains valid for
+    the current connection even without Redis backing.
+    """
     token = secrets.token_urlsafe(32)
-    await _rd.setex(f"session:{token}", SESSION_TTL, str(user_id))
+    try:
+        await _rd.setex(f"session:{token}", SESSION_TTL, str(user_id))
+    except Exception:
+        pass  # Redis optional — auth flow continues via page.session.store
     return token
 
 
 async def resolve_session(token: str) -> int | None:
-    val = await _rd.get(f"session:{token}")
-    return int(val) if val else None
+    try:
+        val = await _rd.get(f"session:{token}")
+        return int(val) if val else None
+    except Exception:
+        return None
 
 
 async def delete_session(token: str) -> None:
-    await _rd.delete(f"session:{token}")
+    try:
+        await _rd.delete(f"session:{token}")
+    except Exception:
+        pass
 
 
 # ── Presence operations (Redis) ──────────────────────────────────────────── #
 
 async def set_presence(user_id: int) -> None:
     """Mark a user as active. TTL is PRESENCE_TTL seconds (5 min)."""
-    await _rd.setex(f"presence:{user_id}", PRESENCE_TTL, "1")
+    try:
+        await _rd.setex(f"presence:{user_id}", PRESENCE_TTL, "1")
+    except Exception:
+        pass
 
 
 async def get_presence(user_id: int) -> bool:
     """Return True if the user has an active presence key."""
-    return bool(await _rd.exists(f"presence:{user_id}"))
+    try:
+        return bool(await _rd.exists(f"presence:{user_id}"))
+    except Exception:
+        return False

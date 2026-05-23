@@ -9,5 +9,6 @@ dependencies = [
     "bcrypt>=5.0.0",
     "flet[all]>=0.85.1",
     "pyotp>=2.9.0",
+    "python-dotenv>=1.2.2",
     "redis[asyncio]>=7.4.0",
 ]
