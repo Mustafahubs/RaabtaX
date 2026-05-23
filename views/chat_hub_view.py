@@ -373,6 +373,10 @@ class ChatHubView:
                 self._message_list.update()
         except asyncio.CancelledError:
             pass
+        except Exception:
+            # Redis unavailable or misconfigured — chat hub still works,
+            # new messages just won't be delivered live until Redis is fixed.
+            pass
         finally:
             await pubsub.aclose()
 
